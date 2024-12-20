@@ -1,0 +1,9 @@
+with-expecter: true
+packages:
+  golang-server:
+    # place your package-specific config here
+    config:
+      inpackage: True
+      recursive: True
+    interfaces:
+      UserRepository:
