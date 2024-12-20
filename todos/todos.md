@@ -21,3 +21,16 @@ A simple build with main entry point.
             ^C{"time":"2024-12-20T09:26:23.13586+08:00","level":"SYSTEM","msg":"interrupt or terminated","callers":"main"}
             {"time":"2024-12-20T09:26:23.135913+08:00","level":"SYSTEM","msg":"exited","callers":"main"}
             ```
+
+### 0002 Domain with Persistence - A New World
+A simple model and storage for Users
+
+- [ ] User Repositories
+  - [ ] Interface
+    - C
+    - R
+    - U
+    - D
+  - [ ] Implement/Test `go-memdb`
+  - [ ] Implement/Test inmem
+
