@@ -13,7 +13,11 @@ func (db *MemDbUserRepository) Create(name, password string) error {
 	db.idMutex.Lock()
 	defer func() { db.id++; db.idMutex.Unlock() }()
 
-	if err := txn.Insert("user", &User{Id: db.id, Username: name}); err != nil {
+	if err := txn.Insert("user", &User{
+		Username: name,
+		Id:       db.id,
+		Password: password,
+	}); err != nil {
 		txn.Abort()
 		return err
 	}
@@ -38,7 +42,10 @@ func (db *MemDbUserRepository) Delete(id int64) error {
 	return nil
 }
 
-func (db *MemDbUserRepository) Read(id *int64, username *string) (User, error) {
+// Read
+// if id is supplied, find by id.
+// else find by username and (optional) password
+func (db *MemDbUserRepository) Read(id *int64, username *string, password *string) (User, error) {
 	//TODO implement me
 
 	txn := db.db.Txn(false)
@@ -62,6 +69,9 @@ func (db *MemDbUserRepository) Read(id *int64, username *string) (User, error) {
 	}
 
 	user := raw.(*User)
+	if password != nil && user.Password != *password {
+		return User{}, PasswordError
+	}
 	return *user, nil
 }
 
