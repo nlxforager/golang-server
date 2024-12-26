@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -11,14 +12,18 @@ import (
 	"golang-server/src/config"
 	gctx "golang-server/src/context"
 	"golang-server/src/log"
+	"golang-server/src/natsinfra"
 
-	"github.com/joho/godotenv"
+	"github.com/nats-io/nats-server/v2/server"
+	"github.com/nats-io/nats.go"
 )
 
 func main() {
-	err := godotenv.Load()
+	// Setup
+	err := config.Init()
 	if err != nil {
 		slog.Error(err.Error())
+		panic(err)
 	}
 	ctx := context.Background()
 	ctx = gctx.AppendCallStack(ctx, "main")
@@ -31,17 +36,59 @@ func main() {
 	l := log.Logger.With(gctx.AsAttributes(ctx)...)
 	l.LogAttrs(ctx, log.LevelSystem, "started")
 
-	ctx, _ = context.WithTimeoutCause(ctx, 10*time.Second, err)
-
+	ctx, _ = context.WithTimeoutCause(ctx, 100*time.Second, fmt.Errorf("timedout_main"))
 	interruptSignal := make(chan os.Signal, 1)
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
+	{ // Nats
+		embedded, _natsUrl, err := config.NatsConfig()
+		if err != nil {
+			panic(err)
+		}
+		var natsUrl string
+		{
+			if embedded {
+				l.LogAttrs(ctx, log.LevelSystem, "NATS initializing embedded server")
+
+				opts := &server.Options{}
+				ns, err := server.NewServer(opts)
+				if err != nil {
+					panic(err)
+				}
+				go ns.Start()
+				if !ns.ReadyForConnections(4 * time.Second) {
+					panic("NATS embedded server not ready for connection")
+				} else {
+					l.LogAttrs(ctx, log.LevelSystem, "NATS embedded server ready")
+				}
+				natsUrl = ns.ClientURL()
+			} else {
+				natsUrl = _natsUrl
+			}
+		}
+		{
+			l.LogAttrs(ctx, log.LevelSystem, "NATS trying to client", slog.String("client url", natsUrl))
+			nc, err := nats.Connect(natsUrl)
+			if err != nil {
+				panic(err)
+			} else {
+				l.LogAttrs(ctx, log.LevelSystem, "ok", slog.String("client url", natsUrl))
+			}
+
+			nc.JetStream()
+			natsinfra.Smoke(nc)
+		}
+	}
+
+	// defer ns.Shutdown() // not called, the library will handle.
+
+	// Teardown
 	select {
 	//case <-interruptSignal:
 	//	l.LogAttrs(ctx, log.LevelSystem, "interrupt signal received")
 	case <-interruptSignal:
 		l.LogAttrs(ctx, log.LevelSystem, "interrupt or terminated")
 	case <-ctx.Done():
-		l.LogAttrs(ctx, log.LevelSystem, "ctx.Done() received")
+		l.LogAttrs(ctx, log.LevelSystem, "ctx.Done() received", slog.String("error", context.Cause(ctx).Error()))
 	}
 
 	l.LogAttrs(ctx, log.LevelSystem, "exited")

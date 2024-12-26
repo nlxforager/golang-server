@@ -31,7 +31,6 @@ func (db *MemDbUserRepository) Update(id int64, name, password *string) error {
 }
 
 func (db *MemDbUserRepository) Delete(id int64) error {
-
 	txn := db.db.Txn(true)
 	defer txn.Abort()
 	err := txn.Delete("user", &User{Id: id})
@@ -47,10 +46,8 @@ func (db *MemDbUserRepository) Delete(id int64) error {
 // else find by username and (optional) password
 func (db *MemDbUserRepository) Read(id *int64, username *string, password *string) (User, error) {
 	//TODO implement me
-
 	txn := db.db.Txn(false)
 	defer txn.Abort()
-
 	if id != nil {
 		raw, err := txn.First("user", "id", *id)
 		if err != nil {
