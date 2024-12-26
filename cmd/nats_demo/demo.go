@@ -104,13 +104,12 @@ func main() {
 				panic(err)
 			}
 
-			msgs, err := cons.Fetch(10)
-			if err != nil {
-				panic(err)
-			}
-			for msg := range msgs.Messages() {
+			cons.Consume(func(msg jetstream.Msg) {
 				l.LogAttrs(ctx, slog.LevelInfo, "received message", slog.String("consumerName", consumerName), slog.String("data", string(msg.Data())))
 				msg.Ack()
+			})
+			if err != nil {
+				panic(err)
 			}
 		}()
 	}
@@ -118,6 +117,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	go func() {
+		for range time.NewTicker(time.Second).C {
+			_, err = JetStream.PublishAsync(subject1, []byte(time.Now().String()))
+		}
+	}()
 
 	interruptSignal := make(chan os.Signal, 1)
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
