@@ -125,51 +125,50 @@ func main() {
 
 	{
 		l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] init stream...")
-		JetStream.DeleteStream(ctx, stream2Name)
+		//JetStream.DeleteStream(ctx, stream2Name)
 		_, err = JetStream.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
 			Name:      stream2Name,
 			Subjects:  []string{subject_QueueGroup},
-			Retention: jetstream.WorkQueuePolicy,
+			Retention: jetstream.LimitsPolicy,
 		})
 		if err != nil {
 			panic(err)
 		}
 
 		l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] init consumer copies in a deliver_once...")
-		var qgConsumerNames []string
 
 		var globalCount = atomic.Int64{}
 		for i, v := range []int64{1, 1} {
 			i := i
 			consumerName := fmt.Sprintf("qg_consumer-%d", v)
 			l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] init consumers...", slog.String("consumerName", consumerName), slog.Int("pos", i))
-			JetStream.DeleteStream(ctx, consumerName)
-			_, err = JetStream.CreateOrUpdateConsumer(ctx, stream2Name, jetstream.ConsumerConfig{
+			//JetStream.DeleteConsumer(ctx, stream2Name, consumerName)
+			cons, err := JetStream.CreateOrUpdateConsumer(ctx, stream2Name, jetstream.ConsumerConfig{
 				Name:           consumerName,
+				Durable:        consumerName,
+				MaxAckPending:  500,
 				FilterSubjects: []string{subject_QueueGroup},
 			})
 			if err != nil {
 				panic(err)
 			}
-
-			qgConsumerNames = append(qgConsumerNames, consumerName)
-
-			l.LogAttrs(ctx, slog.LevelInfo, "getting consumer...", slog.String("consumerName", consumerName))
-			// get consumer handle
-			cons, err := JetStream.Consumer(ctx, stream2Name, consumerName)
-			if err != nil {
-				panic(err)
-			}
+			// Display relevant sequence information
+			info, _ := cons.Info(ctx)
+			l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] init consumers...", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.Uint64("Last Delivered Sequence", info.Delivered.Stream),
+				slog.Uint64("Last Acknowledged Sequence: %d", info.AckFloor.Stream),
+				slog.Uint64("Pending Messages: %d", info.NumPending))
 
 			go func() {
+				<-time.Tick(5 * time.Second)
 				var count atomic.Int64
 				var maxPayload JsonPayload
 
 				cons.Consume(func(msg jetstream.Msg) {
+					defer msg.Ack()
+
 					count.Add(1)
 					globalCount.Add(1)
 
-					defer msg.Ack()
 					var payload JsonPayload
 					json.Unmarshal(msg.Data(), &payload)
 					if maxPayload.Id < payload.Id {
@@ -177,13 +176,14 @@ func main() {
 					}
 					meta, _ := msg.Metadata()
 
-					l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] received messages", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.Any("maxPayload", maxPayload),
+					l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] received messages (.Consume)", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.Any("maxPayload", maxPayload),
 						slog.Int64("count", count.Load()), slog.Uint64("meta.NumDelivered", meta.NumDelivered), slog.Uint64("meta.NumPending", meta.NumPending), slog.Int64("globalCount", globalCount.Load()))
 				})
 
 			}()
+
 			go func() {
-				return
+				<-time.Tick(5 * time.Second)
 				var count atomic.Int64
 				for range time.Tick(time.Second * 1) {
 					batch, err := cons.FetchNoWait(200)
@@ -195,22 +195,34 @@ func main() {
 					for msg := range batch.Messages() {
 						count.Add(1)
 						globalCount.Add(1)
-						defer msg.Ack()
+
 						var payload JsonPayload
 						json.Unmarshal(msg.Data(), &payload)
 						if maxPayload.Id < payload.Id {
 							maxPayload = payload
 						}
 						//l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] received message", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.String("subject", subject), slog.Any("data", data))
+						msg.Ack()
 					}
-					l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] received messages", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.Any("maxPayload", maxPayload),
+					l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] received messages (.FetchNoWait)", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.Any("maxPayload", maxPayload),
 						slog.Int64("count", count.Load()), slog.Int64("globalCount", globalCount.Load()))
 				}
 			}()
 
-			if err != nil {
-				panic(err)
-			}
+			go func() {
+				for range time.Tick(1 * time.Second) {
+					info, _ := cons.Info(ctx)
+					l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] consumer info", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.Uint64("Last Delivered Sequence", info.Delivered.Stream),
+						slog.Uint64("Last Acknowledged Sequence: %d", info.AckFloor.Stream),
+						slog.Uint64("Pending Messages: %d", info.NumPending))
+					if info.NumAckPending >= info.Config.MaxAckPending {
+						l.LogAttrs(ctx, slog.LevelWarn, "[deliver_once] MaxAckPending reached limit", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.Uint64("Last Delivered Sequence", info.Delivered.Stream),
+							slog.Uint64("Last Acknowledged Sequence: %d", info.AckFloor.Stream),
+							slog.Uint64("Pending Messages: %d", info.NumPending))
+						// Take action, e.g., send an error or log
+					}
+				}
+			}()
 		}
 	}
 	l.LogAttrs(ctx, slog.LevelInfo, "pulse")
@@ -235,6 +247,7 @@ func main() {
 				payloadB, _ := json.Marshal(payload)
 				ack, _ := JetStream.PublishAsync(subject_QueueGroup, payloadB)
 				go func() {
+					return
 					pubAck := <-ack.Ok()
 
 					//<-ack.Ok()
