@@ -43,8 +43,11 @@ type JsonPayload struct {
 	Some string `json:"some"`
 }
 
+// main
+// Prerequisite:
+// Run nats server
+// $ docker run -p 4222:4222 -ti nats:latest -js -m 8222
 func main() {
-
 	ctx := context.Background()
 	ctx = gctx.AppendCallStack(ctx, "main")
 
@@ -75,6 +78,21 @@ func main() {
 	}
 	subject1 := "subject_a.1"
 	subject1_json := "subject_a_json.1"
+
+	{
+		kv, err := JetStream.CreateKeyValue(ctx, jetstream.KeyValueConfig{
+			Bucket:      "bucket-1",
+			Description: "",
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		kv.Create(ctx, "key1", []byte("value1"))
+		v, _ := kv.Get(ctx, "key1")
+
+		l.LogAttrs(ctx, slog.LevelInfo, "kv.Get -> ", slog.Any("v.Value()", string(v.Value())))
+	}
 
 	_, err = JetStream.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
 		Name:     stream1Name,
