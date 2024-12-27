@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -40,7 +41,9 @@ func init() {
 }
 
 type JsonPayload struct {
-	Some string `json:"some"`
+	Some string    `json:"some"`
+	Id   int64     `json:"id"`
+	Time time.Time `json:"time"`
 }
 
 // main
@@ -54,8 +57,7 @@ func main() {
 	l := log.Logger.With(gctx.AsAttributes(ctx)...)
 	l.LogAttrs(ctx, log.LevelSystem, "[nats_demo] started")
 
-	var natsUrl string
-	natsUrl = nats.DefaultURL
+	natsUrl := nats.DefaultURL
 	l.LogAttrs(ctx, log.LevelSystem, "NATS trying to client", slog.String("client url", natsUrl))
 	nc, err := nats.Connect(natsUrl)
 	if err != nil {
@@ -73,100 +75,172 @@ func main() {
 	ctx, _ = context.WithTimeoutCause(ctx, 299*time.Second, fmt.Errorf("timedout_main"))
 
 	stream1Name := "stream-1"
+	stream2Name := "stream-2"
 	if err != nil {
 		panic(err)
 	}
 	subject1 := "subject_a.1"
-	subject1_json := "subject_a_json.1"
+	subject1_Json := "subject_a_json.1"
+	subject_QueueGroup := "subject_qgrp.1"
+
+	l.LogAttrs(ctx, slog.LevelInfo, "handling kv store...")
+	kv, err := JetStream.CreateKeyValue(ctx, jetstream.KeyValueConfig{
+		Bucket:      "bucket-1",
+		Description: "",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	kv.Create(ctx, "key1", []byte("value1"))
+	value, _ := kv.Get(ctx, "key1")
+
+	l.LogAttrs(ctx, slog.LevelInfo, "kv.Get -> ", slog.Any("value.Value()", string(value.Value())))
+
+	l.LogAttrs(ctx, slog.LevelInfo, "create stream...")
+	_, err = JetStream.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+		Name:     stream1Name,
+		Subjects: []string{subject1, subject1_Json},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	l.LogAttrs(ctx, slog.LevelInfo, "publishing some data...")
+	_, err = JetStream.PublishAsync(subject1, []byte("1_before_any_subscription11"))
+	if err != nil {
+		panic(err)
+	}
+	b, _ := json.Marshal(JsonPayload{
+		Some: "SomeValue",
+	})
+
+	_, err = JetStream.PublishAsync(subject1_Json, b)
+	if err != nil {
+		panic(err)
+	}
+
+	//go ConsumerWithIndividualStreams(l, ctx, err, stream1Name, subject1, subject1_Json)
 
 	{
-		kv, err := JetStream.CreateKeyValue(ctx, jetstream.KeyValueConfig{
-			Bucket:      "bucket-1",
-			Description: "",
+		l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] init stream...")
+		JetStream.DeleteStream(ctx, stream2Name)
+		_, err = JetStream.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
+			Name:      stream2Name,
+			Subjects:  []string{subject_QueueGroup},
+			Retention: jetstream.WorkQueuePolicy,
 		})
 		if err != nil {
 			panic(err)
 		}
 
-		kv.Create(ctx, "key1", []byte("value1"))
-		v, _ := kv.Get(ctx, "key1")
+		l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] init consumer copies in a deliver_once...")
+		var qgConsumerNames []string
 
-		l.LogAttrs(ctx, slog.LevelInfo, "kv.Get -> ", slog.Any("v.Value()", string(v.Value())))
-	}
-
-	_, err = JetStream.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
-		Name:     stream1Name,
-		Subjects: []string{subject1, subject1_json},
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	_, err = JetStream.PublishAsync(subject1, []byte("1_before_any_subscription11"))
-	if err != nil {
-		panic(err)
-	}
-
-	b, _ := json.Marshal(JsonPayload{
-		Some: "SomeValue",
-	})
-
-	_, err = JetStream.PublishAsync(subject1_json, b)
-	if err != nil {
-		panic(err)
-	}
-
-	l.LogAttrs(ctx, slog.LevelInfo, "init consumers...")
-	for i := range []int64{1} {
-		go func() {
-			consumerName := fmt.Sprintf("consumer-%d", i)
-			l.LogAttrs(ctx, slog.LevelInfo, "init consumer...", slog.String("consumerName", consumerName))
-			//ctx, _ := context.WithDeadline(ctx, time.Now().Add(1*time.Second))
-			//JetStream.DeleteConsumer(ctx, stream1Name, consumerName)
-
-			_, err = JetStream.CreateOrUpdateConsumer(ctx, stream1Name, jetstream.ConsumerConfig{
+		var globalCount = atomic.Int64{}
+		for i, v := range []int64{1, 1} {
+			i := i
+			consumerName := fmt.Sprintf("qg_consumer-%d", v)
+			l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] init consumers...", slog.String("consumerName", consumerName), slog.Int("pos", i))
+			JetStream.DeleteStream(ctx, consumerName)
+			_, err = JetStream.CreateOrUpdateConsumer(ctx, stream2Name, jetstream.ConsumerConfig{
 				Name:           consumerName,
-				FilterSubjects: []string{subject1, subject1_json},
+				FilterSubjects: []string{subject_QueueGroup},
 			})
-
 			if err != nil {
 				panic(err)
 			}
+
+			qgConsumerNames = append(qgConsumerNames, consumerName)
+
 			l.LogAttrs(ctx, slog.LevelInfo, "getting consumer...", slog.String("consumerName", consumerName))
 			// get consumer handle
-			cons, err := JetStream.Consumer(ctx, stream1Name, consumerName)
+			cons, err := JetStream.Consumer(ctx, stream2Name, consumerName)
 			if err != nil {
 				panic(err)
 			}
 
-			cons.Consume(func(msg jetstream.Msg) {
-				defer msg.Ack()
+			go func() {
+				var count atomic.Int64
+				var maxPayload JsonPayload
 
-				var data any
-				subject := msg.Subject()
-				if subject == subject1_json {
+				cons.Consume(func(msg jetstream.Msg) {
+					count.Add(1)
+					globalCount.Add(1)
+
+					defer msg.Ack()
 					var payload JsonPayload
 					json.Unmarshal(msg.Data(), &payload)
-					data = payload
-				} else {
-					data = string(msg.Data())
+					if maxPayload.Id < payload.Id {
+						maxPayload = payload
+					}
+					meta, _ := msg.Metadata()
+
+					l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] received messages", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.Any("maxPayload", maxPayload),
+						slog.Int64("count", count.Load()), slog.Uint64("meta.NumDelivered", meta.NumDelivered), slog.Uint64("meta.NumPending", meta.NumPending), slog.Int64("globalCount", globalCount.Load()))
+				})
+
+			}()
+			go func() {
+				return
+				var count atomic.Int64
+				for range time.Tick(time.Second * 1) {
+					batch, err := cons.FetchNoWait(200)
+					if err != nil {
+						panic(err)
+					}
+
+					var maxPayload JsonPayload
+					for msg := range batch.Messages() {
+						count.Add(1)
+						globalCount.Add(1)
+						defer msg.Ack()
+						var payload JsonPayload
+						json.Unmarshal(msg.Data(), &payload)
+						if maxPayload.Id < payload.Id {
+							maxPayload = payload
+						}
+						//l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] received message", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.String("subject", subject), slog.Any("data", data))
+					}
+					l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] received messages", slog.String("consumerName", consumerName), slog.Int("pos", i), slog.Any("maxPayload", maxPayload),
+						slog.Int64("count", count.Load()), slog.Int64("globalCount", globalCount.Load()))
 				}
-				l.LogAttrs(ctx, slog.LevelInfo, "received message", slog.String("consumerName", consumerName), slog.String("subject", subject), slog.Any("data", data))
-			})
+			}()
+
 			if err != nil {
 				panic(err)
 			}
-		}()
+		}
 	}
-	_, err = JetStream.PublishAsync(subject1, []byte("2_after init consumers"))
+	l.LogAttrs(ctx, slog.LevelInfo, "pulse")
+	_, err = JetStream.PublishAsync(subject_QueueGroup, []byte("2_after init consumers"))
 	if err != nil {
 		panic(err)
 	}
 
 	go func() {
+		var c atomic.Int64
+		t := time.Now()
 		for range time.NewTicker(time.Second).C {
-			_, err = JetStream.PublishAsync(subject1, []byte(time.Now().String()))
+			l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] pulsing messages", slog.Duration("since", time.Since(t)), slog.Int64("count", c.Load()))
+
+			for i := 0; i < 1000; i++ {
+				c.Add(1)
+				payload := JsonPayload{
+					Some: "queue??",
+					Id:   c.Load(),
+					Time: time.Now(),
+				}
+				payloadB, _ := json.Marshal(payload)
+				ack, _ := JetStream.PublishAsync(subject_QueueGroup, payloadB)
+				go func() {
+					pubAck := <-ack.Ok()
+
+					//<-ack.Ok()
+					l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] pulsing messages::ack", slog.Uint64("seq", pubAck.Sequence), slog.Int64("payload.Id", payload.Id))
+				}()
+			}
 		}
 	}()
 
@@ -185,4 +259,59 @@ func main() {
 	}
 
 	l.LogAttrs(ctx, log.LevelSystem, "exited")
+}
+
+func ConsumerWithIndividualStreams(l *slog.Logger, ctx context.Context, err error, stream1Name string, subjectName string, subjectJson string) error {
+	l.LogAttrs(ctx, slog.LevelInfo, "init consumers with individual streams...")
+	for i := range []int64{1, 2} {
+		consumerName := fmt.Sprintf("consumer-%d", i)
+		l.LogAttrs(ctx, slog.LevelInfo, "init consumer...", slog.String("consumerName", consumerName))
+		//ctx, _ := context.WithDeadline(ctx, time.Now().Add(1*time.Second))
+		//JetStream.DeleteConsumer(ctx, stream1Name, consumerName)
+
+		_, err = JetStream.CreateOrUpdateConsumer(ctx, stream1Name, jetstream.ConsumerConfig{
+			Name:           consumerName,
+			FilterSubjects: []string{subjectName, subjectJson},
+		})
+
+		if err != nil {
+			panic(err)
+		}
+		l.LogAttrs(ctx, slog.LevelInfo, "getting consumer...", slog.String("consumerName", consumerName))
+		// get consumer handle
+		cons, err := JetStream.Consumer(ctx, stream1Name, consumerName)
+		if err != nil {
+			panic(err)
+		}
+
+		cons.Consume(func(msg jetstream.Msg) {
+			defer msg.Ack()
+
+			var data any
+			subject := msg.Subject()
+			if subject == subjectJson {
+				var payload JsonPayload
+				json.Unmarshal(msg.Data(), &payload)
+				data = payload
+			} else {
+				data = string(msg.Data())
+			}
+			l.LogAttrs(ctx, slog.LevelInfo, "received message", slog.String("consumerName", consumerName), slog.String("subject", subject), slog.Any("data", data))
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+	l.LogAttrs(ctx, slog.LevelInfo, "pulse")
+	_, err = JetStream.PublishAsync(subjectName, []byte("2_after init consumers"))
+	if err != nil {
+		panic(err)
+	}
+
+	go func() {
+		for range time.NewTicker(time.Second).C {
+			_, err = JetStream.PublishAsync(subjectName, []byte(time.Now().String()))
+		}
+	}()
+	return err
 }
