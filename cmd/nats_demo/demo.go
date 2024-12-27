@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -13,12 +14,10 @@ import (
 	gctx "golang-server/src/context"
 	"golang-server/src/log"
 
-	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
-var Server *server.Server
 var JetStream jetstream.JetStream
 
 func init() {
@@ -38,6 +37,10 @@ func init() {
 	l := log.Logger.With(gctx.AsAttributes(ctx)...)
 	l.LogAttrs(ctx, log.LevelSystem, "[nats_demo] init")
 
+}
+
+type JsonPayload struct {
+	Some string `json:"some"`
 }
 
 func main() {
@@ -71,11 +74,13 @@ func main() {
 		panic(err)
 	}
 	subject1 := "subject_a.1"
+	subject1_json := "subject_a_json.1"
 
-	stream1, err := JetStream.CreateStream(ctx, jetstream.StreamConfig{
+	_, err = JetStream.CreateOrUpdateStream(ctx, jetstream.StreamConfig{
 		Name:     stream1Name,
-		Subjects: []string{"ORDERS.*", subject1},
+		Subjects: []string{subject1, subject1_json},
 	})
+
 	if err != nil {
 		panic(err)
 	}
@@ -85,18 +90,31 @@ func main() {
 		panic(err)
 	}
 
+	b, _ := json.Marshal(JsonPayload{
+		Some: "SomeValue",
+	})
+
+	_, err = JetStream.PublishAsync(subject1_json, b)
+	if err != nil {
+		panic(err)
+	}
+
 	l.LogAttrs(ctx, slog.LevelInfo, "init consumers...")
-	for i := range []int64{1, 2, 3, 4} {
+	for i := range []int64{1} {
 		go func() {
 			consumerName := fmt.Sprintf("consumer-%d", i)
 			l.LogAttrs(ctx, slog.LevelInfo, "init consumer...", slog.String("consumerName", consumerName))
 			//ctx, _ := context.WithDeadline(ctx, time.Now().Add(1*time.Second))
-			_, err = JetStream.CreateConsumer(ctx, stream1Name, jetstream.ConsumerConfig{Name: consumerName})
+			//JetStream.DeleteConsumer(ctx, stream1Name, consumerName)
+
+			_, err = JetStream.CreateOrUpdateConsumer(ctx, stream1Name, jetstream.ConsumerConfig{
+				Name:           consumerName,
+				FilterSubjects: []string{subject1, subject1_json},
+			})
+
 			if err != nil {
 				panic(err)
 			}
-			stream1.CachedInfo()
-
 			l.LogAttrs(ctx, slog.LevelInfo, "getting consumer...", slog.String("consumerName", consumerName))
 			// get consumer handle
 			cons, err := JetStream.Consumer(ctx, stream1Name, consumerName)
@@ -105,8 +123,18 @@ func main() {
 			}
 
 			cons.Consume(func(msg jetstream.Msg) {
-				l.LogAttrs(ctx, slog.LevelInfo, "received message", slog.String("consumerName", consumerName), slog.String("data", string(msg.Data())))
-				msg.Ack()
+				defer msg.Ack()
+
+				var data any
+				subject := msg.Subject()
+				if subject == subject1_json {
+					var payload JsonPayload
+					json.Unmarshal(msg.Data(), &payload)
+					data = payload
+				} else {
+					data = string(msg.Data())
+				}
+				l.LogAttrs(ctx, slog.LevelInfo, "received message", slog.String("consumerName", consumerName), slog.String("subject", subject), slog.Any("data", data))
 			})
 			if err != nil {
 				panic(err)
