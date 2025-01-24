@@ -12,7 +12,7 @@ writing all modes via HTTP
 
 - [ ] login homepage
   - [x] Service: Hello world
-  - [ ] API `GET /`
-    - [ ] Content-Type: JSON
-    - [ ] Content-Type: HTML (templ)
+  - [x] API `GET /`
+    - [x] Content-Type: JSON
+    - [x] Content-Type: HTML (templ)
 

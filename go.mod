@@ -12,6 +12,7 @@ require (
 	github.com/nats-io/nats-server/v2 v2.10.24
 	github.com/nats-io/nats.go v1.38.0
 	github.com/stretchr/testify v1.10.0
+	golang.org/x/net v0.21.0
 )
 
 require (
