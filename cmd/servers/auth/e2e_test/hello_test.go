@@ -1,18 +1,21 @@
 package e2e_test
 
 import (
+	"context"
 	"io"
 	"net/http"
+
 	"net/http/httptest"
 	"testing"
 
-	"golang-server/cmd/servers/auth/handlers"
+	auth "golang-server/cmd/servers/auth/mux"
 )
 
 func TestHandler_Hello(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/upper?word=abc", nil)
+	req := httptest.NewRequestWithContext(context.TODO(), http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
-	handlers.Hello()(w, req)
+
+	auth.NewMux().ServeHTTP(w, req)
 	res := w.Result()
 	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)
