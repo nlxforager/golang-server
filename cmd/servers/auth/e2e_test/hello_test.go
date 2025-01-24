@@ -19,7 +19,7 @@ func TestHandler_Hello_AcceptJSON(t *testing.T) {
 	req.Header.Set("Accept", "application/json")
 	w := httptest.NewRecorder()
 
-	auth.NewMux().ServeHTTP(w, req)
+	auth.NewMux(nil).ServeHTTP(w, req)
 
 	res := w.Result()
 	defer res.Body.Close()
@@ -57,7 +57,7 @@ func TestHandler_Hello_AcceptUnspecified(t *testing.T) {
 	req.Header.Set("Accept", "aaa/json")
 
 	fmt.Printf("%s <-", req.Header.Get("Accept"))
-	auth.NewMux().ServeHTTP(w, req)
+	auth.NewMux(nil).ServeHTTP(w, req)
 
 	res := w.Result()
 	defer res.Body.Close()
@@ -93,7 +93,7 @@ func TestHandler_Hello_AcceptHTML(t *testing.T) {
 	req.Header.Set("Accept", "text/html")
 
 	fmt.Printf("%s <-", req.Header.Get("Accept"))
-	auth.NewMux().ServeHTTP(w, req)
+	auth.NewMux(nil).ServeHTTP(w, req)
 
 	res := w.Result()
 	defer res.Body.Close()

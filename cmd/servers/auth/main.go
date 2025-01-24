@@ -39,7 +39,7 @@ func main() {
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
 	// HTTP Server
 	{
-		mux := mux.NewMux()
+		mux := mux.NewMux(nil)
 		http.ListenAndServe("", mux)
 	}
 

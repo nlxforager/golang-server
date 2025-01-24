@@ -1,34 +1,40 @@
 package handlers
 
 import (
-	"html/template"
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 
-	"golang-server/src/domain/hello"
+	"golang-server/src/domain/auth"
 	"golang-server/src/log"
 )
 
-func Hello() func(w http.ResponseWriter, r *http.Request) {
+type UserNamePassword struct {
+	Username *string `json:"username"`
+	Password *string `json:"password"`
+}
+
+func AuthByUsername(authService auth.AuthService) func(w http.ResponseWriter, r *http.Request) {
 	l := log.Logger.With(slog.String("handler", "hello_world"))
 	l.Info("hello world")
 
-	helloService := hello.NewHelloService()
 	options := Options{
 		AcceptFuncsOpts: AcceptFuncsOpts{
 			AcceptFuncs: map[string]AcceptFunc{
 				"application/json": func(w http.ResponseWriter, r *http.Request) {
-					message := helloService.Hello()
-					w.Write([]byte("{\"data\": {\"message\": \"" + message + "\"}}"))
-				},
-				"text/html": func(w http.ResponseWriter, r *http.Request) {
-					message := helloService.Hello()
-					tmp, err := template.New("hello_world").Parse("<html><body><div>{{.}}</div></body></html>")
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						return
+					form := &UserNamePassword{}
+					json.NewDecoder(r.Body).Decode(form)
+
+					var err error
+					if form.Username != nil || form.Password != nil {
+						err = fmt.Errorf("insufficent username or password")
+					} else if err = authService.ByPasswordAndUsername(*form.Username, *form.Password); err != nil {
+						err = fmt.Errorf("username and password invalid")
 					}
-					tmp.Execute(w, message)
+					if err != nil {
+						w.WriteHeader(http.StatusUnauthorized)
+					}
 				},
 			},
 			DefaultFunc: func(w http.ResponseWriter, r *http.Request) {
