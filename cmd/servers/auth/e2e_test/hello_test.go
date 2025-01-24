@@ -106,12 +106,12 @@ func TestHandler_Hello_AcceptHTML(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected error to be nil got %v", err)
 	}
-	t.Logf("??  HTML %#v", data.FirstChild)
-	t.Logf("??  HEAD = HTML.child %#v", data.FirstChild.FirstChild)
-	t.Logf("??  BODY = HEAD.Next %#v", data.FirstChild.FirstChild.NextSibling)
-	t.Logf("??  div = BODY.child %#v", data.FirstChild.FirstChild.NextSibling.FirstChild)
+	//t.Logf("??  HTML %#v", data.FirstChild)
+	//t.Logf("??  HEAD = HTML.child %#v", data.FirstChild.FirstChild)
+	//t.Logf("??  BODY = HEAD.Next %#v", data.FirstChild.FirstChild.NextSibling)
+	//t.Logf("??  div = BODY.child %#v", data.FirstChild.FirstChild.NextSibling.FirstChild)
 	want := data.FirstChild.FirstChild.NextSibling.FirstChild.FirstChild.Data
-	t.Logf("??  WANT = div.child.data %#v", data.FirstChild.FirstChild.NextSibling.FirstChild.FirstChild.Data)
+	//t.Logf("??  WANT = div.child.data %#v", data.FirstChild.FirstChild.NextSibling.FirstChild.FirstChild.Data)
 
 	if data.FirstChild.Data != "html" {
 		t.Errorf("expected %s got %#v", "html", data.FirstChild.Data)
