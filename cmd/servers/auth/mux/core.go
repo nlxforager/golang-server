@@ -2,8 +2,9 @@
 package mux
 
 import (
-	"golang-server/cmd/servers/auth/handlers"
 	"net/http"
+
+	"golang-server/cmd/servers/auth/handlers"
 )
 
 // The closes entry point sans sockets.

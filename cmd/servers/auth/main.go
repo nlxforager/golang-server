@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	mux2 "golang-server/cmd/servers/auth/mux"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"golang-server/cmd/servers/auth/mux"
 	"golang-server/src/config"
 	gctx "golang-server/src/context"
 	"golang-server/src/log"
@@ -39,7 +39,7 @@ func main() {
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
 	// HTTP Server
 	{
-		mux := mux2.NewMux()
+		mux := mux.NewMux()
 		http.ListenAndServe("", mux)
 	}
 
