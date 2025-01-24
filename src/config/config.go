@@ -16,10 +16,18 @@ func Init() error {
 	return godotenv.Load()
 }
 
-func NatsConfig() ( /* _embedded */ bool, string, error) {
-	embedded := os.Getenv(CONFIG_NATS_EMBEDDED) == "TRUE"
-	if embedded && os.Getenv(CONFIG_NATS_SERVER_URL) != "" {
-		return false, "", fmt.Errorf("either embed or specify serverurl")
+type NatsConfig struct {
+	Embedded bool
+	Url      string
+}
+
+func GetNatsConfig() (NatsConfig, error) {
+	embedded, url := os.Getenv(CONFIG_NATS_EMBEDDED) == "TRUE", os.Getenv(CONFIG_NATS_SERVER_URL)
+	if embedded && url != "" {
+		return NatsConfig{}, fmt.Errorf("either set embedded server or specify serverurl, not both")
 	}
-	return embedded, os.Getenv(CONFIG_NATS_SERVER_URL), nil
+	return NatsConfig{
+		Embedded: embedded,
+		Url:      url,
+	}, nil
 }

@@ -39,18 +39,16 @@ func main() {
 	ctx, _ = context.WithTimeoutCause(ctx, 100*time.Second, fmt.Errorf("timedout_main"))
 	interruptSignal := make(chan os.Signal, 1)
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
+
 	{ // Nats
-		embedded, _natsUrl, err := config.NatsConfig()
+		natsConfig, err := config.GetNatsConfig()
 		if err != nil {
 			panic(err)
 		}
-		var natsUrl string
 		{
-			if embedded {
+			if natsConfig.Embedded {
 				l.LogAttrs(ctx, log.LevelSystem, "NATS initializing embedded server")
-
-				opts := &server.Options{}
-				ns, err := server.NewServer(opts)
+				ns, err := server.NewServer(&server.Options{})
 				if err != nil {
 					panic(err)
 				}
@@ -60,18 +58,14 @@ func main() {
 				} else {
 					l.LogAttrs(ctx, log.LevelSystem, "NATS embedded server ready")
 				}
-				natsUrl = ns.ClientURL()
-			} else {
-				natsUrl = _natsUrl
+				natsConfig.Url = ns.ClientURL()
 			}
-		}
-		{
-			l.LogAttrs(ctx, log.LevelSystem, "NATS trying to client", slog.String("client url", natsUrl))
-			nc, err := nats.Connect(natsUrl)
+			l.LogAttrs(ctx, log.LevelSystem, "NATS trying to client", slog.String("client url", natsConfig.Url))
+			nc, err := nats.Connect(natsConfig.Url)
 			if err != nil {
 				panic(err)
 			} else {
-				l.LogAttrs(ctx, log.LevelSystem, "ok", slog.String("client url", natsUrl))
+				l.LogAttrs(ctx, log.LevelSystem, "ok", slog.String("client url", natsConfig.Url))
 			}
 
 			nc.JetStream()
@@ -83,8 +77,6 @@ func main() {
 
 	// Teardown
 	select {
-	//case <-interruptSignal:
-	//	l.LogAttrs(ctx, log.LevelSystem, "interrupt signal received")
 	case <-interruptSignal:
 		l.LogAttrs(ctx, log.LevelSystem, "interrupt or terminated")
 	case <-ctx.Done():

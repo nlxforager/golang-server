@@ -1,3 +1,1 @@
 package nats
-
-func Init() {}

@@ -37,7 +37,6 @@ func init() {
 
 	l := log.Logger.With(gctx.AsAttributes(ctx)...)
 	l.LogAttrs(ctx, log.LevelSystem, "[nats_demo] init")
-
 }
 
 type JsonPayload struct {
@@ -142,7 +141,6 @@ func main() {
 			i := i
 			consumerName := fmt.Sprintf("qg_consumer-%d", v)
 			l.LogAttrs(ctx, slog.LevelInfo, "[deliver_once] init consumers...", slog.String("consumerName", consumerName), slog.Int("pos", i))
-			//JetStream.DeleteConsumer(ctx, stream2Name, consumerName)
 			cons, err := JetStream.CreateOrUpdateConsumer(ctx, stream2Name, jetstream.ConsumerConfig{
 				Name:           consumerName,
 				Durable:        consumerName,
@@ -272,59 +270,4 @@ func main() {
 	}
 
 	l.LogAttrs(ctx, log.LevelSystem, "exited")
-}
-
-func ConsumerWithIndividualStreams(l *slog.Logger, ctx context.Context, err error, stream1Name string, subjectName string, subjectJson string) error {
-	l.LogAttrs(ctx, slog.LevelInfo, "init consumers with individual streams...")
-	for i := range []int64{1, 2} {
-		consumerName := fmt.Sprintf("consumer-%d", i)
-		l.LogAttrs(ctx, slog.LevelInfo, "init consumer...", slog.String("consumerName", consumerName))
-		//ctx, _ := context.WithDeadline(ctx, time.Now().Add(1*time.Second))
-		//JetStream.DeleteConsumer(ctx, stream1Name, consumerName)
-
-		_, err = JetStream.CreateOrUpdateConsumer(ctx, stream1Name, jetstream.ConsumerConfig{
-			Name:           consumerName,
-			FilterSubjects: []string{subjectName, subjectJson},
-		})
-
-		if err != nil {
-			panic(err)
-		}
-		l.LogAttrs(ctx, slog.LevelInfo, "getting consumer...", slog.String("consumerName", consumerName))
-		// get consumer handle
-		cons, err := JetStream.Consumer(ctx, stream1Name, consumerName)
-		if err != nil {
-			panic(err)
-		}
-
-		cons.Consume(func(msg jetstream.Msg) {
-			defer msg.Ack()
-
-			var data any
-			subject := msg.Subject()
-			if subject == subjectJson {
-				var payload JsonPayload
-				json.Unmarshal(msg.Data(), &payload)
-				data = payload
-			} else {
-				data = string(msg.Data())
-			}
-			l.LogAttrs(ctx, slog.LevelInfo, "received message", slog.String("consumerName", consumerName), slog.String("subject", subject), slog.Any("data", data))
-		})
-		if err != nil {
-			panic(err)
-		}
-	}
-	l.LogAttrs(ctx, slog.LevelInfo, "pulse")
-	_, err = JetStream.PublishAsync(subjectName, []byte("2_after init consumers"))
-	if err != nil {
-		panic(err)
-	}
-
-	go func() {
-		for range time.NewTicker(time.Second).C {
-			_, err = JetStream.PublishAsync(subjectName, []byte(time.Now().String()))
-		}
-	}()
-	return err
 }
