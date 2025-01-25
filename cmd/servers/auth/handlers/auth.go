@@ -29,13 +29,19 @@ func NewAuthHandler(authService auth.AuthService, mailService email.EmailService
 	return ah, nil
 }
 
+type AUTH_MODE string
+
+const AUTH_MODE_SIMPLE_PW AUTH_MODE = "SIMPLE_PW"
+const AUTH_MODE_2FA_PW_E AUTH_MODE = "2FA_PW_E"
+
 func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *http.Request) {
-	l := log.Logger.With(slog.String("handler", "authService"))
-	l.Info("auth by password")
+	l := log.Logger.With(slog.String("handler", "AuthHandler"))
+	l.Info("AuthHandler::AuthByUsernamePassword")
 
 	type RequestBody struct {
-		Username *string `json:"username"`
-		Password *string `json:"password"`
+		Username *string    `json:"username"`
+		Password *string    `json:"password"`
+		Mode     *AUTH_MODE `json:"auth_mode"`
 	}
 
 	options := Options{
@@ -45,14 +51,16 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 					form := &RequestBody{}
 					json.NewDecoder(r.Body).Decode(form)
 
-					if form.Username == nil || form.Password == nil {
-						err := fmt.Errorf("insufficent username or password")
-						w.WriteHeader(http.StatusUnauthorized)
-						w.Write(AsError(err).ToBytes())
-						return
+					var err error
+					switch {
+					case form.Mode == nil:
+						err = fmt.Errorf("unknown authentication mode")
+					case form.Username == nil || form.Password == nil:
+						err = fmt.Errorf("insufficent username or password")
+					default:
+						err = h.AuthService.ByPasswordAndUsername(*form.Username, *form.Password)
 					}
 
-					err := h.AuthService.ByPasswordAndUsername(*form.Username, *form.Password)
 					if err != nil {
 						w.WriteHeader(http.StatusUnauthorized)
 						w.Write(AsError(err).ToBytes())
@@ -129,9 +137,9 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 					if form.Otp == nil || form.Token == nil {
 						err = fmt.Errorf("insufficent otp or token")
 						goto prevalidation
-					} else if err = h.AuthService.VerifyOTP(*form.Otp, *form.Token); err != nil {
+					}
+					if err = h.AuthService.VerifyOTP(*form.Otp, *form.Token); err != nil {
 						err = fmt.Errorf("otp and token invalid")
-						goto prevalidation
 					}
 
 				prevalidation:

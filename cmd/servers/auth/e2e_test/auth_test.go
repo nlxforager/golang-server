@@ -17,15 +17,17 @@ import (
 )
 
 // Password With 2FA
-func TestHandler_Password_OK(t *testing.T) {
+func TestHandler_Password_2FA_OK(t *testing.T) {
 	type Body struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		Mode     string `json:"auth_mode"`
 	}
 
 	b, err := json.Marshal(&Body{
 		Username: "user1",
 		Password: "password1",
+		Mode:     "2FA_PW_E",
 	})
 	if err != nil {
 		t.Fatal(err)
