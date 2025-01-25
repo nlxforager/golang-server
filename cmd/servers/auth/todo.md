@@ -51,7 +51,6 @@ The user can decide which to use, with the default being 1FA during registration
         - [x] submit {`weak_token`, otp} for validation
           - [x] returns 200 if ok.
 
-
 ### TODO: Implementation
 - [ ] login
   - [ ] via password with 2FA (password, then email otp)

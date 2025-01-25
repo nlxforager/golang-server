@@ -42,8 +42,6 @@ func (h *AuthHandler) RegisterUsernamePassword() func(w http.ResponseWriter, r *
 		AcceptFuncsOpts: AcceptFuncsOpts{
 			AcceptFuncs: map[string]AcceptFunc{
 				"application/json": func(w http.ResponseWriter, r *http.Request) {
-					l.Info("AuthHandler::RegisterUsernamePassword()")
-
 					form := &RequestBody{}
 					json.NewDecoder(r.Body).Decode(form)
 
@@ -63,13 +61,10 @@ func (h *AuthHandler) RegisterUsernamePassword() func(w http.ResponseWriter, r *
 						w.Write(AsError(err).ToBytes())
 						return
 					}
-					fmt.Printf("User registered successfully\n")
 					w.WriteHeader(http.StatusCreated)
 				},
 			},
 			DefaultFunc: func(w http.ResponseWriter, r *http.Request) {
-				l.Info("AuthHandler::RegisterUsernamePassword()")
-
 				w.WriteHeader(http.StatusNotAcceptable)
 				w.Write([]byte("{\"error\":\"Invalid Accept Header\"}"))
 			},
@@ -95,8 +90,6 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 		AcceptFuncsOpts: AcceptFuncsOpts{
 			AcceptFuncs: map[string]AcceptFunc{
 				"application/json": func(w http.ResponseWriter, r *http.Request) {
-					l.Info("AuthHandler::AuthByUsernamePassword()")
-
 					form := &RequestBody{}
 					json.NewDecoder(r.Body).Decode(form)
 
@@ -106,7 +99,6 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 					switch {
 
 					case form.Username == nil || form.Password == nil:
-
 						err = fmt.Errorf("insufficent username or password %v", form)
 						errStatusCode = http.StatusBadRequest
 					default:

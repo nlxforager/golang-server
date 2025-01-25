@@ -2,7 +2,6 @@
 package mux
 
 import (
-	"fmt"
 	"net/http"
 
 	"golang-server/cmd/servers/auth/handlers"
@@ -57,7 +56,6 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 
 		mustAuth := MiddleWare(nil).Wrap(func(next http.HandlerFunc) http.HandlerFunc {
 			return func(writer http.ResponseWriter, request *http.Request) {
-				fmt.Printf("middleware1\n")
 				next(writer, request)
 			}
 		})
