@@ -29,11 +29,12 @@ The user can decide which to use, with the default being 1FA during registration
   - Not hungry - no cookies.
 
 ### TODO: Mocking
-- [ ] register
-  - [ ] via username, password
-- [ ] `PATCH` for changing mode
+- [x] register
+  - [x] via username, password
+- [x] `PATCH /user/`
+  - [x] support changing `email` and `auth_mode`
 - [x] login
-  - [ ] add modes
+  - [x] add modes
       - mode should be stored as user info, server-side
       ~~body should have `body.mode:String("SIMPLE_PW"|"2FA_PW_E")`~~
     - [x] Mode `SIMPLE_PW`: Simple via username, password 

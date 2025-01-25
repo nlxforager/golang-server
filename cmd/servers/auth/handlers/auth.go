@@ -42,6 +42,8 @@ func (h *AuthHandler) RegisterUsernamePassword() func(w http.ResponseWriter, r *
 		AcceptFuncsOpts: AcceptFuncsOpts{
 			AcceptFuncs: map[string]AcceptFunc{
 				"application/json": func(w http.ResponseWriter, r *http.Request) {
+					l.Info("AuthHandler::RegisterUsernamePassword()")
+
 					form := &RequestBody{}
 					json.NewDecoder(r.Body).Decode(form)
 
@@ -61,11 +63,13 @@ func (h *AuthHandler) RegisterUsernamePassword() func(w http.ResponseWriter, r *
 						w.Write(AsError(err).ToBytes())
 						return
 					}
-
+					fmt.Printf("User registered successfully\n")
 					w.WriteHeader(http.StatusCreated)
 				},
 			},
 			DefaultFunc: func(w http.ResponseWriter, r *http.Request) {
+				l.Info("AuthHandler::RegisterUsernamePassword()")
+
 				w.WriteHeader(http.StatusNotAcceptable)
 				w.Write([]byte("{\"error\":\"Invalid Accept Header\"}"))
 			},
@@ -91,6 +95,8 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 		AcceptFuncsOpts: AcceptFuncsOpts{
 			AcceptFuncs: map[string]AcceptFunc{
 				"application/json": func(w http.ResponseWriter, r *http.Request) {
+					l.Info("AuthHandler::AuthByUsernamePassword()")
+
 					form := &RequestBody{}
 					json.NewDecoder(r.Body).Decode(form)
 
@@ -100,7 +106,8 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 					switch {
 
 					case form.Username == nil || form.Password == nil:
-						err = fmt.Errorf("insufficent username or password")
+
+						err = fmt.Errorf("insufficent username or password %v", form)
 						errStatusCode = http.StatusBadRequest
 					default:
 						_err, _user := h.AuthService.ByPasswordAndUsername(*form.Username, *form.Password)
@@ -237,6 +244,71 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		accepts := r.Header["Accept"]
+		options.GetAcceptFunc(accepts)(w, r)
+	}
+}
+
+func (h *AuthHandler) PatchUser() func(w http.ResponseWriter, r *http.Request) {
+	l := log.Logger.With(slog.String("handler", "authService"))
+	l.Info("AuthHandler::PatchUser")
+
+	type Patch struct {
+		Op       string          `json:"op"`
+		Username string          `json:"username"`
+		Mode     *auth.AUTH_MODE `json:"auth_mode"`
+		Email    *string         `json:"email"`
+	}
+	type PatchBody []Patch
+
+	options := Options{
+		AcceptFuncsOpts: AcceptFuncsOpts{
+			AcceptFuncs: map[string]AcceptFunc{
+				"application/json": func(w http.ResponseWriter, r *http.Request) {
+					l.Info("AuthHandler::PatchUser()")
+					patches := PatchBody{}
+					var err error
+					if err = json.NewDecoder(r.Body).Decode(&patches); err != nil {
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+
+					if len(patches) != 1 {
+						err = fmt.Errorf("request can have one and only one patch")
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write(AsError(err).ToBytes())
+						return
+					}
+					p := patches[0]
+					if p.Op == "modify" {
+						if !p.Mode.IsValid() {
+							w.WriteHeader(http.StatusBadRequest)
+							return
+						}
+
+						err := h.AuthService.ModifyUser(p.Username, auth.ChangeSet{
+							AuthMode: p.Mode,
+							Email:    p.Email,
+						})
+						if err != nil {
+							w.WriteHeader(http.StatusBadRequest)
+							w.Write(AsError(err).ToBytes())
+							return
+						}
+						w.WriteHeader(http.StatusOK)
+						return
+					}
+
+				},
+			},
+			DefaultFunc: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNotAcceptable)
+				w.Write([]byte("{\"error\":\"Invalid Accept Header\"}"))
+			},
+		},
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		accepts := r.Header["Accept"]
 		options.GetAcceptFunc(accepts)(w, r)

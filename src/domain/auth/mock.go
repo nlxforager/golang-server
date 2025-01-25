@@ -38,6 +38,21 @@ type MockAuth struct {
 	Generator otp.OtpMockGenerator
 }
 
+func (m MockAuth) ModifyUser(username string, set ChangeSet) error {
+	u, ok := m.UserByUsernames[username]
+	if !ok {
+		return errors.New("user not found")
+	}
+	if set.AuthMode != nil {
+		u.Mode = string(*set.AuthMode)
+	}
+	if set.Email != nil {
+		u.Email = *set.Email
+	}
+	m.UserByUsernames[username] = u
+	return nil
+}
+
 func (m MockAuth) RegisterUsernamePassword(username, password string) error {
 	m.UserByUsernames[username] = MockUser{
 		Username: username,

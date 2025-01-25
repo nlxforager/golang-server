@@ -316,3 +316,140 @@ func TestHandler_Password_NOTOK(t *testing.T) {
 		t.Errorf("expected status code to be %v got %v", http.StatusOK, res.StatusCode)
 	}
 }
+
+// "SIMPLE_PW" -> "2FA_PW_E"
+// over here we should be obtaining the `weak_token` only. that is, 2FA does not complete after 1FA
+func TestHandler_PatchAuthMode(t *testing.T) {
+	mockAuthService := authservice.NewMockAuth()
+	mockAuthService.UserByUsernames["user1"] = authservice.MockUser{
+		Username: "user1",
+		Password: "password1",
+		Email:    "some.com.dummy",
+		Mode:     "SIMPLE_PW",
+	}
+
+	mockMailService := emailservice.NewMockOtpSingleSendReceiver()
+	mux := mux.NewMux(&mux.MuxOpts{
+		AuthMuxOpts: &mux.AuthMuxOpts{
+			Auth: mockAuthService,
+			Mail: mockMailService,
+		},
+	})
+
+	type Body struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	b, err := json.Marshal(&Body{
+		Username: "user1",
+		Password: "password1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reader := bytes.NewReader(b)
+	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/register/", reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	res := w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusCreated {
+		t.Errorf("expected status code to be %v got %v", http.StatusCreated, res.StatusCode)
+	}
+
+	{ // PATCH
+		type Patch struct {
+			Op       string `json:"op"`
+			Username string `json:"username"`
+			Mode     string `json:"auth_mode"`
+			Email    string `json:"email"`
+		}
+		type PatchBody []Patch
+
+		patches := PatchBody{
+			Patch{
+				Op:       "modify",
+				Username: "user1",
+				Mode:     "2FA_PW_E",
+				Email:    "dummy@some.com",
+			},
+		}
+		bodypatch, _ := json.Marshal(&patches)
+		reader = bytes.NewReader(bodypatch)
+		req = httptest.NewRequestWithContext(context.TODO(), http.MethodPatch, "/user/", reader)
+		req.Header.Set("Accept", "application/json")
+
+		w = httptest.NewRecorder()
+		mux.ServeHTTP(w, req)
+		res = w.Result()
+		defer res.Body.Close()
+
+		if res.StatusCode != http.StatusOK {
+			t.Fatalf("expected status code to be %v got %v", http.StatusOK, res.StatusCode)
+		}
+	}
+
+	reader = bytes.NewReader(b)
+	req = httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/token/", reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	res = w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("expected status code to be %v got %v", http.StatusOK, res.StatusCode)
+	}
+
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Errorf("expected error to be nil got %v", err)
+	}
+	type response struct {
+		Data  any    `json:"data"`
+		Error string `json:"error"`
+	}
+
+	var resp response
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		t.Errorf("expected error to be nil got %v, data %s", err, string(data))
+	}
+
+	_wantErr := ""
+	if resp.Error != _wantErr {
+		t.Errorf("expected %s got %v", _wantErr, resp.Error)
+	}
+
+	d, ok := resp.Data.(map[string]interface{})
+	if !ok {
+		t.Errorf("expected error to be nil got %#v, data %s", resp, string(data))
+	}
+	if d["username"] != "user1" {
+		t.Errorf("expected username to be user1 got %v", d["username"])
+	}
+	if d["password"] != nil {
+		t.Errorf("expected password to be password1 got %v", d["password"])
+	}
+
+	if d["weak_token"] == nil {
+		t.Errorf("expected weak_token got %v", d["weak_token"])
+	}
+
+	if d["token"] != nil {
+		t.Errorf("expected nil token got %v", d["token"])
+	}
+}

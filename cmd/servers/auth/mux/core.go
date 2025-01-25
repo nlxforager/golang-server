@@ -2,6 +2,7 @@
 package mux
 
 import (
+	"fmt"
 	"net/http"
 
 	"golang-server/cmd/servers/auth/handlers"
@@ -53,7 +54,35 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 		mux.HandleFunc("POST /register/", authHandlers.RegisterUsernamePassword())
 		mux.HandleFunc("POST /token/", authHandlers.AuthByUsernamePassword())
 		mux.HandleFunc("POST /otp/", authHandlers.SubmitOtp())
+
+		mustAuth := MiddleWare(nil).Wrap(func(next http.HandlerFunc) http.HandlerFunc {
+			return func(writer http.ResponseWriter, request *http.Request) {
+				fmt.Printf("middleware1\n")
+				next(writer, request)
+			}
+		})
+		mux.HandleFunc("PATCH /user/", mustAuth(authHandlers.PatchUser()))
 	}
 
 	return mux
+}
+
+type MiddleWare func(http.HandlerFunc) http.HandlerFunc
+
+// Wrap
+// .Wrap(f1,f2,f3) => f1 => f2 => f3
+func (mw MiddleWare) Wrap(nexts ...MiddleWare) MiddleWare {
+	for _, next := range nexts {
+		mw = mw.wrap(next)
+	}
+	return mw
+}
+
+func (mw MiddleWare) wrap(next MiddleWare) MiddleWare {
+	if mw == nil {
+		return next
+	}
+	return func(handlerFunc http.HandlerFunc) http.HandlerFunc {
+		return next(mw(handlerFunc))
+	}
 }
