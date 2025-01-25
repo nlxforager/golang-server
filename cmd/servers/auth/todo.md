@@ -29,17 +29,21 @@ As a server, I want to authenticate users using 2FA.
 ### TODO: Mocking
 - [ ] register via username, password
 - [x] login
-  - [x] via password with 2FA (password, then email otp)
-    - [x] Factor 1: username/password
-      `POST /password/", authHandlers.AuthByUsernamePassword()`
-      - [x] if ok
-        - [x] asynchronously send `OTP` to email with timeout.
-        - [x] return 200 with: 
-          - [x] a weak jwt `weak_token` for user identification down flow.
-    - [x] Factor 2:email
-      `POST /otp/", authHandlers.SubmitOtp()`
-      - [x] submit {`weak_token`, otp} for validation
-        - [x] returns 200 if ok.
+  - [ ] add modes
+      body should have `body.mode:String("SIMPLE_PW"|"2FA_PW_E")`
+    - [ ] Mode `SIMPLE_PW`: Simple via username, password 
+    - [x] Mode `2FA_PW_E`: via password with 2FA (password, then email otp)
+      - [x] Factor 1: username/password
+        `POST /password/", authHandlers.AuthByUsernamePassword()`
+        - [x] if ok
+          - [x] asynchronously send `OTP` to email with timeout.
+          - [x] return 200 with: 
+            - [x] a weak jwt `weak_token` for user identification down flow.
+              - [ ] add `auth_mode` in claims
+      - [x] Factor 2:email
+        `POST /otp/", authHandlers.SubmitOtp()`
+        - [x] submit {`weak_token`, otp} for validation
+          - [x] returns 200 if ok.
 
 
 ### TODO: Implementation
