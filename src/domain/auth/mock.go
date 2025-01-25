@@ -38,6 +38,17 @@ type MockAuth struct {
 	Generator otp.OtpMockGenerator
 }
 
+func (m MockAuth) RegisterUsernamePassword(username, password string) error {
+	m.UserByUsernames[username] = MockUser{
+		Username: username,
+		Password: password,
+		Email:    "",
+		Mode:     string(AUTH_MODE_SIMPLE_PW),
+	}
+
+	return nil
+}
+
 func (m MockAuth) CreateTokenUsernameOnly(username string) (string, error) {
 	service := jwt.Service{
 		SecretKey: "TEST",
@@ -98,8 +109,11 @@ func (m MockAuth) ByPasswordAndUsername(username, password string) (error, *User
 			AuthMode: AUTH_MODE(u.Mode),
 		}
 	}
+
 	return errors.New("wrong username or password"), nil
 }
+
+var _ AuthService = (*MockAuth)(nil)
 
 func NewMockAuth() *MockAuth {
 	return &MockAuth{

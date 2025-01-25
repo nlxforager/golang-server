@@ -50,6 +50,7 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 		if err != nil {
 			panic(err)
 		}
+		mux.HandleFunc("POST /register/", authHandlers.RegisterUsernamePassword())
 		mux.HandleFunc("POST /token/", authHandlers.AuthByUsernamePassword())
 		mux.HandleFunc("POST /otp/", authHandlers.SubmitOtp())
 	}

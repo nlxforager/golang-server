@@ -13,6 +13,7 @@ type User struct {
 type AuthService interface {
 	GetEmail(username string) (string, error)
 	ByPasswordAndUsername(username, password string) (error, *User)
+	RegisterUsernamePassword(username, password string) error
 
 	AuthService_OTP
 	JwtService

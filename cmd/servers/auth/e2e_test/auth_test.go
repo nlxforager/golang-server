@@ -18,27 +18,6 @@ import (
 
 // "2FA_PW_E"
 func TestHandler_Password_2FA_OK(t *testing.T) {
-	type Body struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-		Mode     string `json:"auth_mode"`
-	}
-
-	b, err := json.Marshal(&Body{
-		Username: "user1",
-		Password: "password1",
-		Mode:     "2FA_PW_E",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	reader := bytes.NewReader(b)
-	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/token/", reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req.Header.Set("Accept", "application/json")
 	mockAuthService := authservice.NewMockAuth()
 	mockAuthService.UserByUsernames["user1"] = authservice.MockUser{
 		Username: "user1",
@@ -54,10 +33,67 @@ func TestHandler_Password_2FA_OK(t *testing.T) {
 			Mail: mockMailService,
 		},
 	})
+
+	type RegisterBody struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	registerBody, err := json.Marshal(&RegisterBody{
+		Username: "user1",
+		Password: "password1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reader := bytes.NewReader(registerBody)
+	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/register/", reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept", "application/json")
+
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
-
 	res := w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusCreated {
+		t.Errorf("expected status code to be %v got %v", http.StatusOK, res.StatusCode)
+	}
+
+	type PostTokenBody struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	postTokenBody, err := json.Marshal(&PostTokenBody{
+		Username: "user1",
+		Password: "password1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// FIXME
+	// add routes for changing mode and email once completed
+	user := mockAuthService.UserByUsernames["user1"]
+	user.Mode = "2FA_PW_E"
+	user.Email = "some@email"
+	mockAuthService.UserByUsernames["user1"] = user
+
+	reader = bytes.NewReader(postTokenBody)
+	req = httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/token/", reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	res = w.Result()
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {

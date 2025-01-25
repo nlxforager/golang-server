@@ -29,6 +29,55 @@ func NewAuthHandler(authService auth.AuthService, mailService email.EmailService
 	return ah, nil
 }
 
+func (h *AuthHandler) RegisterUsernamePassword() func(w http.ResponseWriter, r *http.Request) {
+	l := log.Logger.With(slog.String("handler", "AuthHandler"))
+	l.Info("AuthHandler::RegisterUsernamePassword")
+
+	type RequestBody struct {
+		Username *string `json:"username"`
+		Password *string `json:"password"`
+	}
+
+	options := Options{
+		AcceptFuncsOpts: AcceptFuncsOpts{
+			AcceptFuncs: map[string]AcceptFunc{
+				"application/json": func(w http.ResponseWriter, r *http.Request) {
+					form := &RequestBody{}
+					json.NewDecoder(r.Body).Decode(form)
+
+					var err error
+					var errStatusCode int
+					switch {
+					case form.Username == nil || form.Password == nil:
+						err = fmt.Errorf("insufficent username or password")
+						errStatusCode = http.StatusBadRequest
+					default:
+						err = h.AuthService.RegisterUsernamePassword(*form.Username, *form.Password)
+						errStatusCode = http.StatusInternalServerError
+					}
+
+					if err != nil {
+						w.WriteHeader(errStatusCode)
+						w.Write(AsError(err).ToBytes())
+						return
+					}
+
+					w.WriteHeader(http.StatusCreated)
+				},
+			},
+			DefaultFunc: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNotAcceptable)
+				w.Write([]byte("{\"error\":\"Invalid Accept Header\"}"))
+			},
+		},
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		accepts := r.Header["Accept"]
+		options.GetAcceptFunc(accepts)(w, r)
+	}
+}
+
 func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *http.Request) {
 	l := log.Logger.With(slog.String("handler", "AuthHandler"))
 	l.Info("AuthHandler::AuthByUsernamePassword")

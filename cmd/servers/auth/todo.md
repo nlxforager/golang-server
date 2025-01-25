@@ -18,7 +18,7 @@ writing all modes via HTTP
 
 
 ## Story
-As a server, I want to authenticate users using 1FA password or 2FA password + email.
+As a server, I want to authenticate users using 1FA password or 2FA password + email OTP.
 
 The user can decide which to use, with the default being 1FA during registration.
 
@@ -29,7 +29,8 @@ The user can decide which to use, with the default being 1FA during registration
   - Not hungry - no cookies.
 
 ### TODO: Mocking
-- [ ] register via username, password
+- [ ] register
+  - [ ] via username, password
 - [ ] `PATCH` for changing mode
 - [x] login
   - [ ] add modes
