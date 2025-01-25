@@ -45,13 +45,14 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 					form := &RequestBody{}
 					json.NewDecoder(r.Body).Decode(form)
 
-					var err error
 					if form.Username == nil || form.Password == nil {
-						err = fmt.Errorf("insufficent username or password")
-					} else if err = h.AuthService.ByPasswordAndUsername(*form.Username, *form.Password); err != nil {
-						err = fmt.Errorf("username and password invalid")
+						err := fmt.Errorf("insufficent username or password")
+						w.WriteHeader(http.StatusUnauthorized)
+						w.Write(AsError(err).ToBytes())
+						return
 					}
 
+					err := h.AuthService.ByPasswordAndUsername(*form.Username, *form.Password)
 					if err != nil {
 						w.WriteHeader(http.StatusUnauthorized)
 						w.Write(AsError(err).ToBytes())
@@ -62,22 +63,18 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 					err = h.AuthService.SetOTP(*form.Username, func() string {
 						return otp
 					})
-
-					go func() {
-						email, eerr := h.AuthService.GetEmail(*form.Username)
-						if eerr == nil {
-							h.MailService.SendOTP(email, otp)
-						}
-					}()
+					email_, err := h.AuthService.GetEmail(*form.Username)
 
 					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write(AsError(err).ToBytes())
 						return
 					}
 
+					go h.MailService.SendOTP(email_, otp)
+
 					token, err := h.AuthService.CreateTokenUsernameOnly(*form.Username)
 					if err != nil {
-						fmt.Printf("err %v", err)
 						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
@@ -91,7 +88,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 							RedirectUrl string  `json:"redirect_url"`
 						}{
 							Username:    form.Username,
-							RedirectUrl: "/otp_form/",
+							RedirectUrl: "/otp/",
 							Token:       token,
 						},
 					})
@@ -103,6 +100,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 			},
 		},
 	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		accepts := r.Header["Accept"]
 		options.GetAcceptFunc(accepts)(w, r)
@@ -112,37 +110,6 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 type OTP struct {
 	Otp   *string `json:"otp"`
 	Token *string `json:"token"`
-}
-
-func (h *AuthHandler) GetOtpForm() func(w http.ResponseWriter, r *http.Request) {
-	l := log.Logger.With(slog.String("handler", "authService"))
-	l.Info("AuthHandler::GetOtpForm")
-
-	options := Options{
-		AcceptFuncsOpts: AcceptFuncsOpts{
-			AcceptFuncs: map[string]AcceptFunc{
-				"application/json": func(w http.ResponseWriter, r *http.Request) {
-					json.NewEncoder(w).Encode(struct {
-						Data any `json:"data"`
-					}{
-						Data: struct {
-							SubmitUrl string `json:"submit_url"`
-						}{
-							SubmitUrl: "/otp/",
-						},
-					})
-				},
-			},
-			DefaultFunc: func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusNotAcceptable)
-				w.Write([]byte("{\"error\":\"Invalid Accept Header\"}"))
-			},
-		},
-	}
-	return func(w http.ResponseWriter, r *http.Request) {
-		accepts := r.Header["Accept"]
-		options.GetAcceptFunc(accepts)(w, r)
-	}
 }
 
 func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
@@ -187,3 +154,34 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 		options.GetAcceptFunc(accepts)(w, r)
 	}
 }
+
+//func (h *AuthHandler) GetOtpForm() func(w http.ResponseWriter, r *http.Request) {
+//	l := log.Logger.With(slog.String("handler", "authService"))
+//	l.Info("AuthHandler::GetOtpForm")
+//
+//	options := Options{
+//		AcceptFuncsOpts: AcceptFuncsOpts{
+//			AcceptFuncs: map[string]AcceptFunc{
+//				"application/json": func(w http.ResponseWriter, r *http.Request) {
+//					json.NewEncoder(w).Encode(struct {
+//						Data any `json:"data"`
+//					}{
+//						Data: struct {
+//							SubmitUrl string `json:"submit_url"`
+//						}{
+//							SubmitUrl: "/otp/",
+//						},
+//					})
+//				},
+//			},
+//			DefaultFunc: func(w http.ResponseWriter, r *http.Request) {
+//				w.WriteHeader(http.StatusNotAcceptable)
+//				w.Write([]byte("{\"error\":\"Invalid Accept Header\"}"))
+//			},
+//		},
+//	}
+//	return func(w http.ResponseWriter, r *http.Request) {
+//		accepts := r.Header["Accept"]
+//		options.GetAcceptFunc(accepts)(w, r)
+//	}
+//}

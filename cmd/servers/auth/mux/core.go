@@ -54,7 +54,6 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 			panic(err)
 		}
 		mux.HandleFunc("POST /password/", authHandlers.AuthByUsernamePassword())
-		mux.HandleFunc("GET /otp_form/", authHandlers.GetOtpForm())
 		mux.HandleFunc("POST /otp/", authHandlers.SubmitOtp())
 	}
 

@@ -110,43 +110,12 @@ func TestHandler_Password_OK(t *testing.T) {
 		t.Errorf("expected redirect_url to be non-empty got %v", dd)
 	}
 
-	t.Logf("%s", dd)
-
-	otpGetFormRequest := httptest.NewRequestWithContext(context.TODO(), http.MethodGet, dd, reader)
-	otpGetFormRequest.Header.Set("Accept", "application/json")
-	w = httptest.NewRecorder()
-	mux.ServeHTTP(w, otpGetFormRequest)
-
-	otpFormRes := w.Result()
-	defer otpFormRes.Body.Close()
-
-	if otpFormRes.StatusCode != http.StatusOK {
-		t.Errorf("otpFormRes expected status code to be %v got %v", http.StatusOK, otpFormRes.StatusCode)
-	}
-
-	type OtpGetFormResponse struct {
-		Data struct {
-			SubmitUrl string `json:"submit_url"`
-		} `json:"data"`
-	}
-
-	var otpGetFormResponse OtpGetFormResponse
-	err = json.NewDecoder(otpFormRes.Body).Decode(&otpGetFormResponse)
-	if err != nil {
-		t.Errorf("expected error to be nil got %v", err)
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	otp, err := mockMailService.OTP(ctx)
 	if err != nil {
 		t.Errorf("expected error to be nil got %v", err)
-	}
-	_ = otp
-	submitOtpUrl := otpGetFormResponse.Data.SubmitUrl
-	if submitOtpUrl == "" {
-		t.Errorf("expected submit_url to be non-empty")
 	}
 
 	type SubmitOtpForm struct {
@@ -164,7 +133,7 @@ func TestHandler_Password_OK(t *testing.T) {
 		t.Errorf("expected error to be nil got %v", eee)
 	}
 	reader = bytes.NewReader(ff)
-	otpSubmitReq := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, submitOtpUrl, reader)
+	otpSubmitReq := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, dd, reader)
 	otpSubmitReq.Header.Set("Accept", "application/json")
 
 	w = httptest.NewRecorder()

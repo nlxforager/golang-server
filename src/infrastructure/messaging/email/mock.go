@@ -2,7 +2,6 @@ package email
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -20,10 +19,7 @@ func (m *MockOtpSingleSendReceiver) OTP(ctx context.Context) (string, error) {
 }
 
 func (m *MockOtpSingleSendReceiver) SendOTP(email, otp string) error {
-
-	fmt.Printf("sending... otp")
 	<-time.After(2 * time.Second)
-	fmt.Printf("sent... otp")
 	m.c <- otp
 	return nil
 }
