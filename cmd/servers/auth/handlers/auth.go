@@ -52,17 +52,21 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 					json.NewDecoder(r.Body).Decode(form)
 
 					var err error
+					var errStatusCode int
 					switch {
 					case form.Mode == nil:
 						err = fmt.Errorf("unknown authentication mode")
+						errStatusCode = http.StatusBadRequest
 					case form.Username == nil || form.Password == nil:
 						err = fmt.Errorf("insufficent username or password")
+						errStatusCode = http.StatusBadRequest
 					default:
 						err = h.AuthService.ByPasswordAndUsername(*form.Username, *form.Password)
+						errStatusCode = http.StatusUnauthorized
 					}
 
 					if err != nil {
-						w.WriteHeader(http.StatusUnauthorized)
+						w.WriteHeader(errStatusCode)
 						w.Write(AsError(err).ToBytes())
 						return
 					}

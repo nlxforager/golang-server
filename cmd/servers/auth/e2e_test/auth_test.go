@@ -16,7 +16,7 @@ import (
 	emailservice "golang-server/src/infrastructure/messaging/email"
 )
 
-// Password With 2FA
+// "2FA_PW_E"
 func TestHandler_Password_2FA_OK(t *testing.T) {
 	type Body struct {
 		Username string `json:"username"`
@@ -156,11 +156,13 @@ func TestHandler_Password_NOTOK(t *testing.T) {
 	type Body struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		Mode     string `json:"auth_mode"`
 	}
 
 	b, err := json.Marshal(&Body{
 		Username: "user1",
-		Password: "password1",
+		Password: "passwoasdfrd1",
+		Mode:     "2FA_PW_E",
 	})
 	if err != nil {
 		t.Fatal(err)

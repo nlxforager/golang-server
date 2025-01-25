@@ -2,7 +2,6 @@
 package mux
 
 import (
-	"fmt"
 	"net/http"
 
 	"golang-server/cmd/servers/auth/handlers"
@@ -35,8 +34,6 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 
 		hello := handlers.Hello()
 		helloMux.HandleFunc("GET /", func(writer http.ResponseWriter, request *http.Request) {
-
-			fmt.Printf("request.URL.Path %s", request.URL.Path)
 			if request.URL.Path != "/" {
 
 				http.NotFound(writer, request)
