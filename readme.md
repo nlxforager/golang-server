@@ -6,5 +6,6 @@
 See [todos](todos)
 
 ## local development 
-`go run ./cmd/nats_demo` - Demonstration of a durable message broker.
-`go run ./cmd/server` - app server
+`go run ./cmd/client_demos/nats` - Demonstration of a durable message broker.
+`go run ./cmd/client_demos/aws` - Using AWS S3 SDK.
+`go run ./servers/<pkg>` - http servers
