@@ -17,6 +17,30 @@ writing all modes via HTTP
     - [x] Content-Type: HTML (templ)
 
 
+## Story
+As a server, I want to authenticate users using 2FA.
+
+## Requirements
+- Should be user-agent agnostic. The server will support the general case.
+- Browser-free user flow: 
+  - A browser should use AJAX, then programmatically store auth data as required.
+  - Not hungry - no cookies.
+
+### TODO: Mocking
 - [ ] login
-  - [ ] via password
+  - [ ] via password with 2FA (password, then email otp)
+    - [ ] Factor 1: username/password
+      `POST /password/", authHandlers.AuthByUsernamePassword()`
+      - [x] if ok
+        - [x] asynchronously send `OTP` to email with timeout.
+        - [x] return 200 with: 
+          - [x] a weak jwt `token` - this `token` is for user identification down flow.
+          TODO remove this step
+          - [ ] `redirect_url` for user to retrieve `submit_url`
+    - [ ] Factor 2:email
+      `POST /otp/", authHandlers.SubmitOtp()`
+      - [x] submit {`weak_token`, otp} for validation
+        - [x] returns 200 if ok.
+
+
 

@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.29.1
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.52
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.73.2
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/hashicorp/go-memdb v1.3.4
 	github.com/joho/godotenv v1.5.1
 	github.com/nats-io/nats-server/v2 v2.10.24

@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"golang.org/x/net/html"
 	"io"
 	"net/http"
@@ -56,7 +55,6 @@ func TestHandler_Hello_AcceptUnspecified(t *testing.T) {
 	w := httptest.NewRecorder()
 	req.Header.Set("Accept", "aaa/json")
 
-	fmt.Printf("%s <-", req.Header.Get("Accept"))
 	auth.NewMux(nil).ServeHTTP(w, req)
 
 	res := w.Result()
@@ -92,7 +90,6 @@ func TestHandler_Hello_AcceptHTML(t *testing.T) {
 	w := httptest.NewRecorder()
 	req.Header.Set("Accept", "text/html")
 
-	fmt.Printf("%s <-", req.Header.Get("Accept"))
 	auth.NewMux(nil).ServeHTTP(w, req)
 
 	res := w.Result()
