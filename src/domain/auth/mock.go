@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"golang-server/src/domain/auth/jwt"
@@ -77,11 +76,9 @@ func (m MockAuth) VerifyOTP(otpVal string, token string) error {
 		SecretKey: "TEST",
 		Issuer:    "TEST-MOCK-SERVER",
 	}
-	fmt.Printf("token.username is %s\n", token)
 
 	username, err := service.GetUsernameFromToken(token)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 

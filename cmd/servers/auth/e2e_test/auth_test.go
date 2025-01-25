@@ -92,11 +92,11 @@ func TestHandler_Password_OK(t *testing.T) {
 		t.Errorf("expected password to be password1 got %v", d["password"])
 	}
 
-	if d["token"] == nil {
-		t.Errorf("expected password to be token got %v", d["token"])
+	if d["weak_token"] == nil {
+		t.Errorf("expected token got %v", d["weak_token"])
 	}
 
-	pwOkToken := d["token"].(string)
+	pwOkToken := d["weak_token"].(string)
 
 	if d["redirect_url"] == nil {
 		t.Errorf("expected password to be redirect_url got %v", d["redirect_url"])
@@ -119,7 +119,7 @@ func TestHandler_Password_OK(t *testing.T) {
 	}
 
 	type SubmitOtpForm struct {
-		Token string `json:"token"`
+		Token string `json:"weak_token"`
 		Otp   string `json:"otp"`
 	}
 

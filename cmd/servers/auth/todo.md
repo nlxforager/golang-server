@@ -34,7 +34,7 @@ As a server, I want to authenticate users using 2FA.
       - [x] if ok
         - [x] asynchronously send `OTP` to email with timeout.
         - [x] return 200 with: 
-          - [x] a weak jwt `token` - this `token` is for user identification down flow.
+          - [x] a weak jwt `weak_token` for user identification down flow.
     - [x] Factor 2:email
       `POST /otp/", authHandlers.SubmitOtp()`
       - [x] submit {`weak_token`, otp} for validation

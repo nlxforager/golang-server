@@ -84,12 +84,12 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 					}{
 						Data: struct {
 							Username    *string `json:"username"`
-							Token       string  `json:"token"`
+							WeakToken   string  `json:"weak_token"`
 							RedirectUrl string  `json:"redirect_url"`
 						}{
 							Username:    form.Username,
 							RedirectUrl: "/otp/",
-							Token:       token,
+							WeakToken:   token,
 						},
 					})
 				},
@@ -109,7 +109,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 
 type OTP struct {
 	Otp   *string `json:"otp"`
-	Token *string `json:"token"`
+	Token *string `json:"weak_token"`
 }
 
 func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
