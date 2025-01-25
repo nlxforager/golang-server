@@ -71,39 +71,59 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 						return
 					}
 
-					otp := h.AuthService.OtpGen()
-					err = h.AuthService.SetOTP(*form.Username, func() string {
-						return otp
-					})
-					email_, err := h.AuthService.GetEmail(*form.Username)
-
-					if err != nil {
-						w.WriteHeader(http.StatusBadRequest)
-						w.Write(AsError(err).ToBytes())
-						return
-					}
-
-					go h.MailService.SendOTP(email_, otp)
-
-					token, err := h.AuthService.CreateTokenUsernameOnly(*form.Username)
-					if err != nil {
-						w.WriteHeader(http.StatusInternalServerError)
-						return
-					}
-
-					json.NewEncoder(w).Encode(struct {
-						Data any `json:"data"`
-					}{
-						Data: struct {
-							Username    *string `json:"username"`
-							WeakToken   string  `json:"weak_token"`
-							RedirectUrl string  `json:"redirect_url"`
+					switch *form.Mode {
+					case AUTH_MODE_SIMPLE_PW:
+						token, err := h.AuthService.CreateTokenUsernameOnly(*form.Username)
+						if err != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+						json.NewEncoder(w).Encode(struct {
+							Data any `json:"data"`
 						}{
-							Username:    form.Username,
-							RedirectUrl: "/otp/",
-							WeakToken:   token,
-						},
-					})
+							Data: struct {
+								Username *string `json:"username"`
+								Token    string  `json:"token"`
+							}{
+								Username: form.Username,
+								Token:    token,
+							},
+						})
+					case AUTH_MODE_2FA_PW_E:
+						otp := h.AuthService.OtpGen()
+						err = h.AuthService.SetOTP(*form.Username, func() string {
+							return otp
+						})
+						email_, err := h.AuthService.GetEmail(*form.Username)
+
+						if err != nil {
+							w.WriteHeader(http.StatusBadRequest)
+							w.Write(AsError(err).ToBytes())
+							return
+						}
+
+						go h.MailService.SendOTP(email_, otp)
+
+						weakToken, err := h.AuthService.CreateTokenUsernameOnly(*form.Username)
+						if err != nil {
+							w.WriteHeader(http.StatusInternalServerError)
+							return
+						}
+						json.NewEncoder(w).Encode(struct {
+							Data any `json:"data"`
+						}{
+							Data: struct {
+								Username    *string `json:"username"`
+								WeakToken   string  `json:"weak_token"`
+								RedirectUrl string  `json:"redirect_url"`
+							}{
+								Username:    form.Username,
+								RedirectUrl: "/otp/",
+								WeakToken:   weakToken,
+							},
+						})
+					}
+
 				},
 			},
 			DefaultFunc: func(w http.ResponseWriter, r *http.Request) {

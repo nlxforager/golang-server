@@ -152,6 +152,96 @@ func TestHandler_Password_2FA_OK(t *testing.T) {
 	}
 }
 
+// "SIMPLE_PW"
+func TestHandler_Password_Simple(t *testing.T) {
+	type Body struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Mode     string `json:"auth_mode"`
+	}
+
+	b, err := json.Marshal(&Body{
+		Username: "user1",
+		Password: "password1",
+		Mode:     "SIMPLE_PW",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reader := bytes.NewReader(b)
+	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/password/", reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Accept", "application/json")
+	mockAuthService := authservice.NewMockAuth()
+	mockAuthService.UserByUsernames["user1"] = authservice.MockUser{
+		Username: "user1",
+		Password: "password1",
+		Email:    "some.com.dummy",
+	}
+
+	mockMailService := emailservice.NewMockOtpSingleSendReceiver()
+	mux := mux.NewMux(&mux.MuxOpts{
+		AuthMuxOpts: &mux.AuthMuxOpts{
+			Auth: mockAuthService,
+			Mail: mockMailService,
+		},
+	})
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+
+	res := w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("expected status code to be %v got %v", http.StatusOK, res.StatusCode)
+	}
+
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Errorf("expected error to be nil got %v", err)
+	}
+	type response struct {
+		Data  any    `json:"data"`
+		Error string `json:"error"`
+	}
+
+	var resp response
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		t.Errorf("expected error to be nil got %v, data %s", err, string(data))
+	}
+
+	_wantErr := ""
+	if resp.Error != _wantErr {
+		t.Errorf("expected %s got %v", _wantErr, resp.Error)
+	}
+
+	d, ok := resp.Data.(map[string]interface{})
+	if !ok {
+		t.Errorf("expected error to be nil got %#v, data %s", resp, string(data))
+	}
+	if d["username"] != "user1" {
+		t.Errorf("expected username to be user1 got %v", d["username"])
+	}
+	if d["password"] != nil {
+		t.Errorf("expected password to be password1 got %v", d["password"])
+	}
+
+	if d["weak_token"] != nil {
+		t.Errorf("expected nil weak_token got %v", d["weak_token"])
+	}
+
+	if d["token"] == nil {
+		t.Errorf("expected token got %v", d["token"])
+	}
+
+	_ = d["token"].(string)
+
+}
+
 func TestHandler_Password_NOTOK(t *testing.T) {
 	type Body struct {
 		Username string `json:"username"`
