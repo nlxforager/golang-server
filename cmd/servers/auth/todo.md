@@ -18,7 +18,9 @@ writing all modes via HTTP
 
 
 ## Story
-As a server, I want to authenticate users using 2FA.
+As a server, I want to authenticate users using 1FA password or 2FA password + email.
+
+The user can decide which to use, with the default being 1FA during registration.
 
 ## Requirements
 - Should be user-agent agnostic. The server will support the general case.
@@ -30,7 +32,8 @@ As a server, I want to authenticate users using 2FA.
 - [ ] register via username, password
 - [x] login
   - [ ] add modes
-      body should have `body.mode:String("SIMPLE_PW"|"2FA_PW_E")`
+      - mode should be stored as user info
+      ~~body should have `body.mode:String("SIMPLE_PW"|"2FA_PW_E")`~~
     - [ ] Mode `SIMPLE_PW`: Simple via username, password 
     - [x] Mode `2FA_PW_E`: via password with 2FA (password, then email otp)
       - [x] Factor 1: username/password
