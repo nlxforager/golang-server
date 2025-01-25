@@ -27,8 +27,9 @@ As a server, I want to authenticate users using 2FA.
   - Not hungry - no cookies.
 
 ### TODO: Mocking
-- [ ] login
-  - [ ] via password with 2FA (password, then email otp)
+- [ ] register via username, password
+- [x] login
+  - [x] via password with 2FA (password, then email otp)
     - [x] Factor 1: username/password
       `POST /password/", authHandlers.AuthByUsernamePassword()`
       - [x] if ok
@@ -41,4 +42,16 @@ As a server, I want to authenticate users using 2FA.
         - [x] returns 200 if ok.
 
 
-
+### TODO: Implementation
+- [ ] login
+  - [ ] via password with 2FA (password, then email otp)
+    - [ ] Factor 1: username/password
+      `POST /password/", authHandlers.AuthByUsernamePassword()`
+      - [ ] if ok
+        - [ ] asynchronously send `OTP` to email with timeout.
+        - [ ] return 200 with:
+          - [ ] a weak jwt `weak_token` for user identification down flow.
+    - [ ] Factor 2:email
+      `POST /otp/", authHandlers.SubmitOtp()`
+      - [ ] submit {`weak_token`, otp} for validation
+        - [ ] returns 200 if ok.
