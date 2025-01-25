@@ -121,17 +121,25 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 			AcceptFuncs: map[string]AcceptFunc{
 				"application/json": func(w http.ResponseWriter, r *http.Request) {
 					form := &OTP{}
-					json.NewDecoder(r.Body).Decode(form)
 
 					var err error
+					if err = json.NewDecoder(r.Body).Decode(form); err != nil {
+						goto prevalidation
+					}
 					if form.Otp == nil || form.Token == nil {
 						err = fmt.Errorf("insufficent otp or token")
+						goto prevalidation
 					} else if err = h.AuthService.VerifyOTP(*form.Otp, *form.Token); err != nil {
-						err = fmt.Errorf("username and token invalid")
+						err = fmt.Errorf("otp and token invalid")
+						goto prevalidation
 					}
-					if err != nil {
-						w.WriteHeader(http.StatusUnauthorized)
-						w.Write(AsError(err).ToBytes())
+
+				prevalidation:
+					{
+						if err != nil {
+							w.WriteHeader(http.StatusUnauthorized)
+							w.Write(AsError(err).ToBytes())
+						}
 					}
 
 					json.NewEncoder(w).Encode(struct {
