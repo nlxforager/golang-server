@@ -30,6 +30,7 @@ The user can decide which to use, with the default being 1FA during registration
 
 ### TODO: Mocking
 - [ ] register via username, password
+- [ ] `PATCH` for changing mode
 - [x] login
   - [ ] add modes
       - mode should be stored as user info, server-side
