@@ -32,9 +32,9 @@ The user can decide which to use, with the default being 1FA during registration
 - [ ] register via username, password
 - [x] login
   - [ ] add modes
-      - mode should be stored as user info
+      - mode should be stored as user info, server-side
       ~~body should have `body.mode:String("SIMPLE_PW"|"2FA_PW_E")`~~
-    - [ ] Mode `SIMPLE_PW`: Simple via username, password 
+    - [x] Mode `SIMPLE_PW`: Simple via username, password 
     - [x] Mode `2FA_PW_E`: via password with 2FA (password, then email otp)
       - [x] Factor 1: username/password
         `POST /password/", authHandlers.AuthByUsernamePassword()`

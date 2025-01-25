@@ -29,19 +29,13 @@ func NewAuthHandler(authService auth.AuthService, mailService email.EmailService
 	return ah, nil
 }
 
-type AUTH_MODE string
-
-const AUTH_MODE_SIMPLE_PW AUTH_MODE = "SIMPLE_PW"
-const AUTH_MODE_2FA_PW_E AUTH_MODE = "2FA_PW_E"
-
 func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *http.Request) {
 	l := log.Logger.With(slog.String("handler", "AuthHandler"))
 	l.Info("AuthHandler::AuthByUsernamePassword")
 
 	type RequestBody struct {
-		Username *string    `json:"username"`
-		Password *string    `json:"password"`
-		Mode     *AUTH_MODE `json:"auth_mode"`
+		Username *string `json:"username"`
+		Password *string `json:"password"`
 	}
 
 	options := Options{
@@ -53,15 +47,18 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 
 					var err error
 					var errStatusCode int
+					var user auth.User
 					switch {
-					case form.Mode == nil:
-						err = fmt.Errorf("unknown authentication mode")
-						errStatusCode = http.StatusBadRequest
+
 					case form.Username == nil || form.Password == nil:
 						err = fmt.Errorf("insufficent username or password")
 						errStatusCode = http.StatusBadRequest
 					default:
-						err = h.AuthService.ByPasswordAndUsername(*form.Username, *form.Password)
+						_err, _user := h.AuthService.ByPasswordAndUsername(*form.Username, *form.Password)
+						err = _err
+						if _user != nil {
+							user = *_user
+						}
 						errStatusCode = http.StatusUnauthorized
 					}
 
@@ -70,9 +67,8 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 						w.Write(AsError(err).ToBytes())
 						return
 					}
-
-					switch *form.Mode {
-					case AUTH_MODE_SIMPLE_PW:
+					switch user.AuthMode {
+					case auth.AUTH_MODE_SIMPLE_PW:
 						token, err := h.AuthService.CreateTokenUsernameOnly(*form.Username)
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
@@ -89,7 +85,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 								Token:    token,
 							},
 						})
-					case AUTH_MODE_2FA_PW_E:
+					case auth.AUTH_MODE_2FA_PW_E:
 						otp := h.AuthService.OtpGen()
 						err = h.AuthService.SetOTP(*form.Username, func() string {
 							return otp
@@ -122,6 +118,9 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 								WeakToken:   weakToken,
 							},
 						})
+					default:
+						w.WriteHeader(http.StatusBadRequest)
+						w.Write(AsError(fmt.Errorf("unknown authentication mode")).ToBytes())
 					}
 
 				},

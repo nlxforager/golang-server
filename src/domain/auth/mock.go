@@ -12,6 +12,7 @@ type MockUser struct {
 	Username string
 	Password string
 	Email    string
+	Mode     string
 }
 
 type UsernameStore struct {
@@ -89,11 +90,15 @@ func (m MockAuth) VerifyOTP(otpVal string, token string) error {
 	return nil
 }
 
-func (m MockAuth) ByPasswordAndUsername(username, password string) error {
-	if password == m.UserByUsernames[username].Password {
-		return nil
+func (m MockAuth) ByPasswordAndUsername(username, password string) (error, *User) {
+	u := m.UserByUsernames[username]
+	if password == u.Password {
+		return nil, &User{
+			Username: username,
+			AuthMode: AUTH_MODE(u.Mode),
+		}
 	}
-	return errors.New("wrong username or password")
+	return errors.New("wrong username or password"), nil
 }
 
 func NewMockAuth() *MockAuth {

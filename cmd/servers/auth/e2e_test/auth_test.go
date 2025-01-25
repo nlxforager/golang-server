@@ -44,6 +44,7 @@ func TestHandler_Password_2FA_OK(t *testing.T) {
 		Username: "user1",
 		Password: "password1",
 		Email:    "some.com.dummy",
+		Mode:     "2FA_PW_E",
 	}
 
 	mockMailService := emailservice.NewMockOtpSingleSendReceiver()
@@ -157,13 +158,11 @@ func TestHandler_Password_Simple(t *testing.T) {
 	type Body struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
-		Mode     string `json:"auth_mode"`
 	}
 
 	b, err := json.Marshal(&Body{
 		Username: "user1",
 		Password: "password1",
-		Mode:     "SIMPLE_PW",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -180,6 +179,7 @@ func TestHandler_Password_Simple(t *testing.T) {
 		Username: "user1",
 		Password: "password1",
 		Email:    "some.com.dummy",
+		Mode:     "SIMPLE_PW",
 	}
 
 	mockMailService := emailservice.NewMockOtpSingleSendReceiver()
@@ -246,13 +246,11 @@ func TestHandler_Password_NOTOK(t *testing.T) {
 	type Body struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
-		Mode     string `json:"auth_mode"`
 	}
 
 	b, err := json.Marshal(&Body{
 		Username: "user1",
 		Password: "passwoasdfrd1",
-		Mode:     "2FA_PW_E",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -267,6 +265,7 @@ func TestHandler_Password_NOTOK(t *testing.T) {
 		Username: "user1",
 		Password: "corridged",
 		Email:    "user1@example.com",
+		Mode:     "SIMPLE_PW",
 	}
 	mux.NewMux(&mux.MuxOpts{
 		AuthMuxOpts: &mux.AuthMuxOpts{
