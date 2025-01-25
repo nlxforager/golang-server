@@ -34,7 +34,7 @@ func TestHandler_Password_2FA_OK(t *testing.T) {
 	}
 
 	reader := bytes.NewReader(b)
-	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/password/", reader)
+	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/token/", reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +169,7 @@ func TestHandler_Password_Simple(t *testing.T) {
 	}
 
 	reader := bytes.NewReader(b)
-	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/password/", reader)
+	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/token/", reader)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -257,7 +257,7 @@ func TestHandler_Password_NOTOK(t *testing.T) {
 	}
 
 	reader := bytes.NewReader(b)
-	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/password/", reader)
+	req := httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/token/", reader)
 	req.Header.Set("Accept", "application/json")
 	w := httptest.NewRecorder()
 	mockAuth := authservice.NewMockAuth()

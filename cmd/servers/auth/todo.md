@@ -38,7 +38,7 @@ The user can decide which to use, with the default being 1FA during registration
     - [x] Mode `SIMPLE_PW`: Simple via username, password 
     - [x] Mode `2FA_PW_E`: via password with 2FA (password, then email otp)
       - [x] Factor 1: username/password
-        `POST /password/", authHandlers.AuthByUsernamePassword()`
+        `POST /token/", authHandlers.AuthByUsernamePassword()`
         - [x] if ok
           - [x] asynchronously send `OTP` to email with timeout.
           - [x] return 200 with: 
@@ -54,7 +54,7 @@ The user can decide which to use, with the default being 1FA during registration
 - [ ] login
   - [ ] via password with 2FA (password, then email otp)
     - [ ] Factor 1: username/password
-      `POST /password/", authHandlers.AuthByUsernamePassword()`
+      `POST /token/", authHandlers.AuthByUsernamePassword()`
       - [ ] if ok
         - [ ] asynchronously send `OTP` to email with timeout.
         - [ ] return 200 with:
