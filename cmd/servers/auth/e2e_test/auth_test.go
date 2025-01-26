@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	emailservice "golang-server/cmd/servers/auth/e2e_test/mocks/email"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,7 +14,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	authservice "golang-server/cmd/servers/auth/e2e_test/mocks"
 	"golang-server/cmd/servers/auth/mux"
-	emailservice "golang-server/src/infrastructure/messaging/email"
 )
 
 // "2FA_PW_E"
@@ -214,7 +213,6 @@ func TestHandler_Password_2FA_OK(t *testing.T) {
 	if !ok {
 		t.Errorf("expected error to be nil got %#v, data %s", resp, string(data))
 	}
-	log.Printf("%#v", d)
 	if d["weak_token"] != nil {
 		t.Errorf("expected nil weak_token got %v", d["weak_token"])
 	}
