@@ -117,7 +117,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 					}
 					switch user.AuthMode {
 					case auth.AUTH_MODE_SIMPLE_PW:
-						token, err := h.AuthService.CreateTokenUsernameOnly(*form.Username)
+						token, err := h.AuthService.CreateStrongToken(*form.Username, user.AuthMode)
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
 							return
@@ -148,7 +148,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 
 						go h.MailService.SendOTP(email_, otp)
 
-						weakToken, err := h.AuthService.CreateTokenUsernameOnly(*form.Username)
+						weakToken, err := h.AuthService.CreateWeakToken(*form.Username, user.AuthMode)
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
 							return

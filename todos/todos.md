@@ -73,6 +73,8 @@ The user can decide which to use, with the default being 1FA during registration
     - mode should be stored as user info, server-side
       ~~body should have `body.mode:String("SIMPLE_PW"|"2FA_PW_E")`~~
     - [x] Mode `SIMPLE_PW`: Simple via username, password
+      - [x] add `is_auth` in claims
+        - once authenticated, process stops => `is_auth` == 'true'
     - [x] Mode `2FA_PW_E`: via password with 2FA (password, then email otp)
       - [x] Factor 1: username/password
         `POST /token/", authHandlers.AuthByUsernamePassword()`
@@ -80,7 +82,7 @@ The user can decide which to use, with the default being 1FA during registration
           - [x] asynchronously send `OTP` to email with timeout.
           - [x] return 200 with:
             - [x] a weak jwt `weak_token` for user identification down flow.
-              - [ ] add `auth_mode` in claims
+              - [x] add `auth_mode` in claims
       - [x] Factor 2:email
         `POST /otp/", authHandlers.SubmitOtp()`
         - [x] submit {`weak_token`, otp} for validation

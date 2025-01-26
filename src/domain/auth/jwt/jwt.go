@@ -13,39 +13,48 @@ type Service struct {
 }
 
 // Function to create Service tokens with claims
-func (a *Service) CreateTokenUsernameOnly(username string) (string, error) {
+func (a *Service) CreateWeakToken(username string, claims map[string]string) (string, error) {
 	// Create a new Service token with claims
-	return a.signToken(jwt.MapClaims{
+
+	mclaim := jwt.MapClaims{
 		"sub": username, // Subject (user identifier)
 		"iss": a.Issuer, // Issuer
 		//"aud": getRole(username),                // Audience (user role)
 		"exp": time.Now().Add(time.Hour).Unix(), // Expiration time
 		"iat": time.Now().Unix(),                // Issued at
-	})
+	}
+
+	for k, v := range claims {
+		mclaim[k] = v
+	}
+	return a.signToken(mclaim)
 }
 
 // Function to create Service tokens with claims
 func (a *Service) GetUsernameFromToken(tokenString string) (string, error) {
-	// Create a new Service token with claims
-	// Parse the token with the secret key
+	return a.GetClaimFromToken(tokenString, "sub")
+}
+
+// Function to create Service tokens with claims
+func (a *Service) GetAuthModeFromToken(tokenString string) (string, error) {
+	return a.GetClaimFromToken(tokenString, "auth_mode")
+}
+
+// Function to create Service tokens with claims
+func (a *Service) GetClaimFromToken(tokenString string, claim string) (string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(a.SecretKey), nil
 	})
-
-	// Check for verification errors
 	if err != nil {
 		return "", err
 	}
-
-	// Check if the token is valid
 	if !token.Valid {
 		return "", fmt.Errorf("invalid token")
 	}
 
 	maps, _ := token.Claims.(jwt.MapClaims)
-	username, _ := maps["sub"].(string)
-	// Return the verified token
-	return username, nil
+	field, _ := maps[claim].(string)
+	return field, nil
 }
 
 func (a *Service) signToken(claims jwt.MapClaims) (string, error) {

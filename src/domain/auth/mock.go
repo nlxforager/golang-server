@@ -64,12 +64,31 @@ func (m MockAuth) RegisterUsernamePassword(username, password string) error {
 	return nil
 }
 
-func (m MockAuth) CreateTokenUsernameOnly(username string) (string, error) {
-	service := jwt.Service{
+func mockJwtService() jwt.Service {
+	return jwt.Service{
 		SecretKey: "TEST",
 		Issuer:    "TEST-MOCK-SERVER",
 	}
-	return service.CreateTokenUsernameOnly(username)
+}
+
+func (m MockAuth) CreateWeakToken(username string, authMode AUTH_MODE) (string, error) {
+	service := mockJwtService()
+	return service.CreateWeakToken(username, map[string]string{
+		"auth_mode": string(authMode),
+	})
+}
+
+func (m MockAuth) CreateStrongToken(username string, authMode AUTH_MODE) (string, error) {
+	service := mockJwtService()
+	return service.CreateWeakToken(username, map[string]string{
+		"auth_mode": string(authMode),
+		"is_auth":   "true",
+	})
+}
+
+func (m MockAuth) GetClaimFromToken(username string, claimKey string) (string, error) {
+	service := mockJwtService()
+	return service.GetClaimFromToken(username, claimKey)
 }
 
 func (m MockAuth) GetUsernameFromToken(username string) (string, error) {
@@ -78,7 +97,7 @@ func (m MockAuth) GetUsernameFromToken(username string) (string, error) {
 		Issuer:    "TEST-MOCK-SERVER",
 	}
 
-	return service.CreateTokenUsernameOnly(username)
+	return service.GetUsernameFromToken(username)
 }
 
 func (m MockAuth) GetEmail(username string) (string, error) {

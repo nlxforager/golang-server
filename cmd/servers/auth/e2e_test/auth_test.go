@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/golang-jwt/jwt/v5"
 	"io"
 	"net/http"
 	"time"
@@ -137,6 +139,16 @@ func TestHandler_Password_2FA_OK(t *testing.T) {
 
 	pwOkToken := d["weak_token"].(string)
 
+	token, _ := jwt.Parse(pwOkToken, nil) // skip verify err since secret is server-side
+	claims, _ := token.Claims.(jwt.MapClaims)
+
+	fmt.Println("Decoded Claims:", claims)
+
+	_, ok = claims["is_auth"]
+	if ok {
+		t.Fatal("expected token to be authenticated")
+	}
+
 	if d["redirect_url"] == nil {
 		t.Errorf("expected password to be redirect_url got %v", d["redirect_url"])
 	}
@@ -263,7 +275,7 @@ func TestHandler_Password_Simple(t *testing.T) {
 		t.Errorf("expected username to be user1 got %v", d["username"])
 	}
 	if d["password"] != nil {
-		t.Errorf("expected password to be password1 got %v", d["password"])
+		t.Errorf("expected password to be empty got %v", d["password"])
 	}
 
 	if d["weak_token"] != nil {
@@ -272,10 +284,21 @@ func TestHandler_Password_Simple(t *testing.T) {
 
 	if d["token"] == nil {
 		t.Errorf("expected token got %v", d["token"])
+
 	}
 
-	_ = d["token"].(string)
+	pwOkToken, _ := d["token"].(string)
 
+	token, _ := jwt.Parse(pwOkToken, nil)
+	claims, _ := token.Claims.(jwt.MapClaims)
+	t.Logf("Decoded Claimssss: %v", claims)
+	is, ok := claims["is_auth"].(string)
+	if !ok {
+		t.Errorf("expected is_auth to be non-nil got %v", is)
+	}
+	if is != "true" {
+		t.Errorf("expected is_auth to be true got %v", is)
+	}
 }
 
 func TestHandler_Password_NOTOK(t *testing.T) {
@@ -314,6 +337,43 @@ func TestHandler_Password_NOTOK(t *testing.T) {
 
 	if res.StatusCode != http.StatusUnauthorized {
 		t.Errorf("expected status code to be %v got %v", http.StatusOK, res.StatusCode)
+	}
+
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Errorf("expected error to be nil got %v", err)
+	}
+	type response struct {
+		Data  any    `json:"data"`
+		Error string `json:"error"`
+	}
+
+	var resp response
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		t.Errorf("expected error to be nil got %v, data %s", err, string(data))
+	}
+
+	_wantErr := ""
+	if resp.Error == _wantErr {
+		t.Errorf("expected error %s got %v", _wantErr, resp.Error)
+	}
+
+	d, ok := resp.Data.(map[string]interface{})
+	if ok {
+		t.Errorf("expected error to be nil got %#v, data %s", resp, string(data))
+	}
+	if d["username"] != nil {
+		t.Errorf("expected username to be null got %v", d["username"])
+	}
+	if d["password"] != nil {
+		t.Errorf("expected password to be null got %v", d["password"])
+	}
+	for _, v := range []string{"weak_token", "token"} {
+		pwOkToken, ok := d[v].(string)
+		if ok {
+			t.Errorf("expected token to be null got %v", pwOkToken)
+		}
 	}
 }
 

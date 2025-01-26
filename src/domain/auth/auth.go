@@ -34,7 +34,8 @@ type AuthService interface {
 }
 
 type JwtService interface {
-	CreateTokenUsernameOnly(username string) (string, error)
+	CreateWeakToken(username string, authMode AUTH_MODE) (string, error)
+	CreateStrongToken(username string, authMode AUTH_MODE) (string, error)
 }
 
 type AuthService_OTP interface {
