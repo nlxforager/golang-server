@@ -2,8 +2,8 @@ package otp
 
 import "math/rand"
 
-type OtpGen = CreateWeakToken
-type OtpMockGenerator struct{}
+type OtpGen = func() string
+type SimpleGenerator struct{}
 
 var letterRunes = []rune("123456789")
 
@@ -14,6 +14,7 @@ func RandStringRunes(n int) string {
 	}
 	return string(b)
 }
-func (*OtpMockGenerator) Generate() string {
+
+func (*SimpleGenerator) Generate() string {
 	return RandStringRunes(6)
 }

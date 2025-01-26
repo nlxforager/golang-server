@@ -3,6 +3,7 @@ package authservice
 import (
 	"context"
 	"errors"
+	"golang-server/src/domain/authservice/otp"
 	"time"
 )
 import "github.com/redis/go-redis/v9"
@@ -93,28 +94,44 @@ func (o OTP) Otp() string {
 	return string(o)
 }
 
-func (s Service) SetOTP(username string, otp func() string) error {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-		Protocol: 3,  // specify 2 for RESP 2 or 3 for RESP 3
-	})
-
-	s.Redis = rdb
-
-	st := rdb.Set(context.TODO(), "set_otp/"+username, otp(), time.Second*10)
-	return st.Err()
+func (s Service) SetOTP(username string, otp func() string) (string, error) {
+	o := otp()
+	rdb := s.Redis
+	st := rdb.Set(context.TODO(), "set_otp/"+username, o, time.Second*10)
+	err := st.Err()
+	if err != nil {
+		return "", err
+	}
+	return o, nil
 }
 
-func (s Service) VerifyOTP(otp string, str string) error {
+// VerifyOTP
+// do not check if is weak or strong token, that is OTP may be the first factor of a MFA flow.
+func (s Service) VerifyOTP(otp string, token string) error {
 	//TODO implement me
-	panic("implement me")
+	tokenS, err := s.ValidateAndGetClaims(token)
+	if err != nil {
+		return err
+	}
+
+	username := tokenS["sub"]
+	val := s.Redis.Get(context.TODO(), "set_otp/"+username)
+
+	err = val.Err()
+	if err != nil {
+		return err
+	}
+
+	vv, _ := val.Result()
+	if vv != otp {
+		return errors.New("otp verification failed")
+	}
+	return nil
 }
 
-func (s Service) OtpGen() string {
-	//TODO implement me
-	panic("implement me")
+func (s Service) OtpGen() func() string {
+	generator := otp.SimpleGenerator{}
+	return func() string { return generator.Generate() }
 }
 
 func (s Service) CreateWeakToken(username string, authMode AUTH_MODE) (string, error) {

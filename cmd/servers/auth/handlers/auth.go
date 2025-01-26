@@ -135,10 +135,8 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 							},
 						})
 					case authservice.AUTH_MODE_2FA_PW_E:
-						otp := h.AuthService.OtpGen()
-						err = h.AuthService.SetOTP(*form.Username, func() string {
-							return otp
-						})
+						otpGen := h.AuthService.OtpGen()
+						stri, err := h.AuthService.SetOTP(*form.Username, otpGen)
 						email_, err := h.AuthService.GetEmail(*form.Username)
 						if err != nil {
 							w.WriteHeader(http.StatusBadRequest)
@@ -146,7 +144,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 							return
 						}
 
-						go h.MailService.SendOTP(email_, otp)
+						go h.MailService.SendOTP(email_, stri)
 
 						weakToken, err := h.AuthService.CreateWeakToken(*form.Username, user.AuthMode)
 						if err != nil {

@@ -40,7 +40,7 @@ type JwtService interface {
 }
 
 type AuthService_OTP interface {
-	SetOTP(username string, otp func() string) error
+	SetOTP(username string, otp func() string) (string, error)
 	VerifyOTP(otp string, token string) error
-	OtpGen() string
+	OtpGen() func() string
 }

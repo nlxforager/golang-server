@@ -32,7 +32,7 @@ type OtpStore struct {
 type MockAuth struct {
 	UsernameStore
 	OtpStore
-	Generator otp.OtpMockGenerator
+	Generator otp.SimpleGenerator
 }
 
 func (m MockAuth) ValidateAndGetClaims(tokenString string) (map[string]string, error) {
@@ -122,13 +122,14 @@ func (m MockAuth) GetEmail(username string) (string, error) {
 	return email, nil
 }
 
-func (m MockAuth) OtpGen() string {
-	return "999999"
+func (m MockAuth) OtpGen() func() string {
+	return func() string { return "999999" }
 }
 
-func (m MockAuth) SetOTP(username string, otp otp.OtpGen) error {
-	m.OtpByUsername[username] = Otp{Value: otp(), Expiry: time.Now().Add(time.Minute)}
-	return nil
+func (m MockAuth) SetOTP(username string, otp otp.OtpGen) (string, error) {
+	o := otp()
+	m.OtpByUsername[username] = Otp{Value: o, Expiry: time.Now().Add(time.Minute)}
+	return o, nil
 }
 
 func (m MockAuth) VerifyOTP(otpVal string, token string) error {
@@ -172,6 +173,6 @@ func NewMockAuth() *MockAuth {
 			OtpByUsername: make(map[string]Otp),
 		},
 
-		Generator: otp.OtpMockGenerator{},
+		Generator: otp.SimpleGenerator{},
 	}
 }
