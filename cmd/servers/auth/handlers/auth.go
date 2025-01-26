@@ -140,7 +140,6 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 							return otp
 						})
 						email_, err := h.AuthService.GetEmail(*form.Username)
-
 						if err != nil {
 							w.WriteHeader(http.StatusBadRequest)
 							w.Write(AsError(err).ToBytes())

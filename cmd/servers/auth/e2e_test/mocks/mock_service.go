@@ -2,9 +2,9 @@ package mocks
 
 import (
 	"errors"
-	"golang-server/src/domain/authservice"
 	"time"
 
+	"golang-server/src/domain/authservice"
 	"golang-server/src/domain/authservice/jwt"
 	"golang-server/src/domain/authservice/otp"
 )

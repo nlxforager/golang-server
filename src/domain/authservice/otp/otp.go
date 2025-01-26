@@ -2,7 +2,7 @@ package otp
 
 import "math/rand"
 
-type OtpGen = func() string
+type OtpGen = CreateWeakToken
 type OtpMockGenerator struct{}
 
 var letterRunes = []rune("123456789")
