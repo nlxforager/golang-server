@@ -1,4 +1,4 @@
-package mux
+package middlewares
 
 import (
 	"net/http"

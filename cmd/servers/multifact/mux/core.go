@@ -2,11 +2,13 @@
 package mux
 
 import (
-	"net/http"
-
+	"fmt"
 	"golang-server/cmd/servers/multifact/handlers"
+	"golang-server/cmd/servers/multifact/mux/middlewares"
 	"golang-server/src/domain/auth"
 	"golang-server/src/domain/email"
+	"net/http"
+	"reflect"
 )
 
 type AuthMuxOpts struct {
@@ -32,50 +34,48 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 		helloMux := http.NewServeMux()
 
 		hello := handlers.Hello()
-		helloMux.HandleFunc("GET /", func(writer http.ResponseWriter, request *http.Request) {
+		helloMux.HandleFunc("GET /", middlewares.LogMiddleware(func(writer http.ResponseWriter, request *http.Request) {
 			if request.URL.Path != "/" {
 				http.NotFound(writer, request)
 			} else {
 				hello(writer, request)
 			}
-		})
+		}))
 
-		mux.Handle("/", helloMux)
+		mux.Handle("GET /", helloMux)
 	}
 	// Routes that should be authenticated or part of authentication flow.
 	if opts.AuthMuxOpts != nil {
-		authMw := BearerAuthMiddleware(opts.Auth)
+		authMw := middlewares.BearerAuthMiddleware(opts.Auth)
 
 		authHandlers, err := handlers.NewAuthHandler(opts.Auth, opts.Mail)
 		if err != nil {
 			panic(err)
 		}
-		mux.HandleFunc("POST /register/", authHandlers.RegisterUsernamePassword())
-		mux.HandleFunc("POST /token/", authHandlers.AuthByUsernamePassword())
-		mux.HandleFunc("POST /otp/", authHandlers.SubmitOtp())
 
-		mux.HandleFunc("PATCH /user/", authMw(authHandlers.PatchUser()))
+		mux.HandleFunc("POST /register/", middlewares.LogMiddleware(authHandlers.RegisterUsernamePassword()))
+		mux.HandleFunc("POST /token/", middlewares.LogMiddleware(authHandlers.AuthByUsernamePassword()))
+		mux.HandleFunc("POST /otp/", middlewares.LogMiddleware(authHandlers.SubmitOtp()))
+
+		mux.HandleFunc("PATCH /user/", middlewares.LogMiddleware.Wrap(authMw)(authHandlers.PatchUser()))
+	}
+
+	{
+		func() {
+			defer func() {
+				_ = recover()
+				//err := recover()
+				//fmt.Printf("cannot log routes %#v\n", err)
+			}()
+
+			return
+			httpMux := reflect.ValueOf(mux).Elem()
+			routes := httpMux.FieldByName("patterns") // This is the map of routes
+			for i := 0; i < routes.Len(); i++ {
+				fmt.Println(routes.Index(i).Elem().FieldByName("str").String())
+			}
+		}()
 	}
 
 	return mux
-}
-
-type MiddleWare func(http.HandlerFunc) http.HandlerFunc
-
-// Wrap
-// .Wrap(f1,f2,f3) => f1 => f2 => f3
-func (mw MiddleWare) Wrap(nexts ...MiddleWare) MiddleWare {
-	for _, next := range nexts {
-		mw = mw.wrap(next)
-	}
-	return mw
-}
-
-func (mw MiddleWare) wrap(next MiddleWare) MiddleWare {
-	if mw == nil {
-		return next
-	}
-	return func(handlerFunc http.HandlerFunc) http.HandlerFunc {
-		return next(mw(handlerFunc))
-	}
 }

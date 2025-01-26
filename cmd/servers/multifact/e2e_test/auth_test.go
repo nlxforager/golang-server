@@ -585,7 +585,7 @@ func TestHandler_PatchAuthMode(t *testing.T) {
 	}
 
 	if d["weak_token"] == nil {
-		t.Errorf("expected weak_token got %v", d["weak_token"])
+		t.Errorf("expected weak_token %v", d["weak_token"])
 	}
 
 	if d["token"] != nil {
