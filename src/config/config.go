@@ -15,6 +15,9 @@ const CONFIG_NATS_SERVER_URL = "NATS_SERVER_URL"
 
 const CONFIG_POSTGRES_CONNSTRING = "POSTGRES_CONNSTRING"
 
+const CONFIG_OTP_EMAIL = "OTP_EMAIL"
+const CONFIG_OTP_PASSWORD = "OTP_PASSWORD"
+
 func Init() error {
 	return godotenv.Load()
 }
@@ -40,10 +43,26 @@ type PGConfig struct {
 }
 
 func GetPostGresConfig() (PGConfig, error) {
-	if os.Getenv(CONFIG_POSTGRES_CONNSTRING) == "" {
-		return PGConfig{}, errors.New(" environment variable not set")
-	}
 	return PGConfig{
 		CONNECTION_STRING: os.Getenv(CONFIG_POSTGRES_CONNSTRING),
+	}, nil
+}
+
+type OtpEmailConfig struct {
+	CONFIG_OTP_EMAIL    string
+	CONFIG_OTP_PASSWORD string
+}
+
+func GetOtpEmailConfig() (OtpEmailConfig, error) {
+	if os.Getenv(CONFIG_OTP_EMAIL) == "" {
+		return OtpEmailConfig{}, errors.New(" environment variable not set")
+	}
+
+	if os.Getenv(CONFIG_OTP_PASSWORD) == "" {
+		return OtpEmailConfig{}, errors.New(" environment variable not set")
+	}
+	return OtpEmailConfig{
+		CONFIG_OTP_EMAIL:    os.Getenv(CONFIG_OTP_EMAIL),
+		CONFIG_OTP_PASSWORD: os.Getenv(CONFIG_OTP_PASSWORD),
 	}, nil
 }

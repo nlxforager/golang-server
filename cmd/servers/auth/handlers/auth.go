@@ -3,29 +3,32 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"golang-server/cmd/servers/auth/e2e_test/mocks"
 	"log/slog"
 	"net/http"
 
+	"golang-server/cmd/servers/auth/e2e_test/mocks"
 	"golang-server/src/domain/auth"
-	"golang-server/src/infrastructure/messaging/email"
+	"golang-server/src/domain/email"
 	"golang-server/src/log"
 )
 
 type AuthHandler struct {
 	AuthService auth.AuthService
-	MailService email.EmailService
+	OtpEmailer  email.OTPEmailer
 }
 
 var _ auth.AuthService = &mocks.MockAuth{}
 
-func NewAuthHandler(authService auth.AuthService, mailService email.EmailService) (*AuthHandler, error) {
+func NewAuthHandler(authService auth.AuthService, mailService email.OTPEmailer) (*AuthHandler, error) {
 	if authService == nil {
 		return nil, fmt.Errorf("auth service is required")
 	}
+	if mailService == nil {
+		return nil, fmt.Errorf("mail service is required")
+	}
 	ah := &AuthHandler{
 		AuthService: authService,
-		MailService: mailService,
+		OtpEmailer:  mailService,
 	}
 	return ah, nil
 }
@@ -144,7 +147,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 							return
 						}
 
-						go h.MailService.SendOTP(email_, stri)
+						go h.OtpEmailer.SendOTP(email_, stri)
 
 						weakToken, err := h.AuthService.CreateWeakToken(*form.Username, user.AuthMode)
 						if err != nil {

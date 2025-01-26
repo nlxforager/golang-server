@@ -6,12 +6,12 @@ import (
 
 	"golang-server/cmd/servers/auth/handlers"
 	"golang-server/src/domain/auth"
-	"golang-server/src/infrastructure/messaging/email"
+	"golang-server/src/domain/email"
 )
 
 type AuthMuxOpts struct {
 	Auth auth.AuthService
-	Mail email.EmailService
+	Mail email.OTPEmailer
 }
 
 type MuxOpts struct {
