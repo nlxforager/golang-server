@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"golang-server/cmd/servers/auth/mux"
+	"golang-server/cmd/servers/multifact/mux"
 	"golang-server/src/config"
 	gctx "golang-server/src/context"
 	"golang-server/src/domain/auth"
@@ -46,9 +46,7 @@ func main() {
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
 	// HTTP Server
 	{
-		pgConfig, _ := config.GetPostGresConfig()       // allow server to run without db conn.
-		otpEmailConfig, _ := config.GetOtpEmailConfig() // allow server to run without db conn.
-
+		pgConfig, _ := config.GetPostGresConfig() // allow server to run without db conn.
 		db, err := sql.Open("postgres", pgConfig.CONNECTION_STRING)
 		if err != nil {
 			panic(err)
@@ -56,20 +54,22 @@ func main() {
 		defer db.Close()
 
 		redisClient := redis.NewClient(&redis.Options{})
-		authService, err := auth.NewService(
-			&auth.Repository{}, redisClient, "issuerXX", "notsosecret",
-		)
 
-		if err != nil {
-			l.LogAttrs(ctx, log.LevelSystem, "failed to initialize auth service")
-			panic(err)
-		}
-
+		otpEmailConfig, _ := config.GetOtpEmailConfig() // allow server to run without email conn.
 		mailService, err := email.NewSimpleClientService(otpEmailConfig.CONFIG_OTP_EMAIL, otpEmailConfig.CONFIG_OTP_PASSWORD)
 		if err != nil {
 			l.LogAttrs(ctx, log.LevelSystem, "failed to initialize mail service")
 			panic(err)
 		}
+
+		authService, err := auth.NewService(
+			&auth.Repository{}, redisClient, "issuerXX", "notsosecret",
+		)
+		if err != nil {
+			l.LogAttrs(ctx, log.LevelSystem, "failed to initialize auth service")
+			panic(err)
+		}
+
 		mux := mux.NewMux(&mux.MuxOpts{
 			AuthMuxOpts: &mux.AuthMuxOpts{
 				Auth: authService,

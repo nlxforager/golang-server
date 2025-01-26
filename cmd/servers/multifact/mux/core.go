@@ -4,7 +4,7 @@ package mux
 import (
 	"net/http"
 
-	"golang-server/cmd/servers/auth/handlers"
+	"golang-server/cmd/servers/multifact/handlers"
 	"golang-server/src/domain/auth"
 	"golang-server/src/domain/email"
 )
