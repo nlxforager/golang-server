@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/golang-jwt/jwt/v5"
+	authservice "golang-server/cmd/servers/auth/e2e_test/mocks"
 	"io"
 	"log"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	"testing"
 
 	"golang-server/cmd/servers/auth/mux"
-	authservice "golang-server/src/domain/auth"
 	emailservice "golang-server/src/infrastructure/messaging/email"
 )
 

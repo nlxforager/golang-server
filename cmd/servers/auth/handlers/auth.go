@@ -3,22 +3,23 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"golang-server/cmd/servers/auth/e2e_test/mocks"
 	"log/slog"
 	"net/http"
 
-	"golang-server/src/domain/auth"
+	"golang-server/src/domain/authservice"
 	"golang-server/src/infrastructure/messaging/email"
 	"golang-server/src/log"
 )
 
 type AuthHandler struct {
-	AuthService auth.AuthService
+	AuthService authservice.AuthService
 	MailService email.EmailService
 }
 
-var _ auth.AuthService = &auth.MockAuth{}
+var _ authservice.AuthService = &mocks.MockAuth{}
 
-func NewAuthHandler(authService auth.AuthService, mailService email.EmailService) (*AuthHandler, error) {
+func NewAuthHandler(authService authservice.AuthService, mailService email.EmailService) (*AuthHandler, error) {
 	if authService == nil {
 		return nil, fmt.Errorf("auth service is required")
 	}
@@ -95,7 +96,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 
 					var err error
 					var errStatusCode int
-					var user auth.User
+					var user authservice.User
 					switch {
 
 					case form.Username == nil || form.Password == nil:
@@ -116,7 +117,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 						return
 					}
 					switch user.AuthMode {
-					case auth.AUTH_MODE_SIMPLE_PW:
+					case authservice.AUTH_MODE_SIMPLE_PW:
 						token, err := h.AuthService.CreateStrongToken(*form.Username, user.AuthMode)
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)
@@ -133,7 +134,7 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 								Token:    token,
 							},
 						})
-					case auth.AUTH_MODE_2FA_PW_E:
+					case authservice.AUTH_MODE_2FA_PW_E:
 						otp := h.AuthService.OtpGen()
 						err = h.AuthService.SetOTP(*form.Username, func() string {
 							return otp
@@ -223,7 +224,7 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						goto prevalidation
 					}
-					token, err = h.AuthService.CreateStrongToken(claims["sub"], auth.AUTH_MODE(claims["auth_mode"]))
+					token, err = h.AuthService.CreateStrongToken(claims["sub"], authservice.AUTH_MODE(claims["auth_mode"]))
 					if err != nil {
 						goto prevalidation
 					}
@@ -263,10 +264,10 @@ func (h *AuthHandler) PatchUser() func(w http.ResponseWriter, r *http.Request) {
 	l.Info("AuthHandler::PatchUser")
 
 	type Patch struct {
-		Op       string          `json:"op"`
-		Username string          `json:"username"`
-		Mode     *auth.AUTH_MODE `json:"auth_mode"`
-		Email    *string         `json:"email"`
+		Op       string                 `json:"op"`
+		Username string                 `json:"username"`
+		Mode     *authservice.AUTH_MODE `json:"auth_mode"`
+		Email    *string                `json:"email"`
 	}
 	type PatchBody []Patch
 
@@ -295,7 +296,7 @@ func (h *AuthHandler) PatchUser() func(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 
-						err := h.AuthService.ModifyUser(p.Username, auth.ChangeSet{
+						err := h.AuthService.ModifyUser(p.Username, authservice.ChangeSet{
 							AuthMode: p.Mode,
 							Email:    p.Email,
 						})
