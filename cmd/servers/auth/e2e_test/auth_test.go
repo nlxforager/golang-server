@@ -4,16 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/golang-jwt/jwt/v5"
-	authservice "golang-server/cmd/servers/auth/e2e_test/mocks"
 	"io"
 	"log"
 	"net/http"
-	"time"
-
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+	authservice "golang-server/cmd/servers/auth/e2e_test/mocks"
 	"golang-server/cmd/servers/auth/mux"
 	emailservice "golang-server/src/infrastructure/messaging/email"
 )
@@ -359,9 +358,11 @@ func TestHandler_Password_NOTOK(t *testing.T) {
 		Email:    "user1@example.com",
 		Mode:     "SIMPLE_PW",
 	}
+	mockMailService := emailservice.NewMockOtpSingleSendReceiver()
 	mux.NewMux(&mux.MuxOpts{
 		AuthMuxOpts: &mux.AuthMuxOpts{
 			Auth: mockAuth,
+			Mail: mockMailService,
 		},
 	}).ServeHTTP(w, req)
 
@@ -411,7 +412,7 @@ func TestHandler_Password_NOTOK(t *testing.T) {
 }
 
 // "SIMPLE_PW" -> "2FA_PW_E"
-// over here we should be obtaining the `weak_token` only. that is, 2FA does not complete after 1FA
+// after changing, the first login attempt should obtain the `weak_token` only. that is, 2FA does not complete after 1FA
 func TestHandler_PatchAuthMode(t *testing.T) {
 	mockAuthService := authservice.NewMockAuth()
 	mockAuthService.UserByUsernames["user1"] = authservice.MockUser{
@@ -458,6 +459,51 @@ func TestHandler_PatchAuthMode(t *testing.T) {
 		t.Errorf("expected status code to be %v got %v", http.StatusCreated, res.StatusCode)
 	}
 
+	// login
+
+	b, err = json.Marshal(&Body{
+		Username: "user1",
+		Password: "password1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reader = bytes.NewReader(b)
+
+	req = httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/token/", reader)
+	req.Header.Set("Accept", "application/json")
+	w = httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	res = w.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		t.Errorf("expected status code to be %v got %v", http.StatusOK, res.StatusCode)
+	}
+
+	resp, err := io.ReadAll(res.Body)
+	if err != nil {
+		t.Errorf("expected error to be nil got %v", err)
+	}
+	//
+	type RespBody struct {
+		Data any `json:"data"`
+	}
+	var respbody RespBody
+	err = json.Unmarshal(resp, &respbody)
+	if err != nil {
+		t.Fatalf("expected error to be nil got %v", err)
+	}
+	d, ok := respbody.Data.(map[string]interface{})
+	if d["token"] == nil {
+		t.Errorf("expected token got %v", d["token"])
+	}
+
+	token, ok := d["token"].(string)
+	if !ok {
+		t.Fatalf("expected token to be non-nil got %v", d["token"])
+	}
+
 	{ // PATCH
 		type Patch struct {
 			Op       string `json:"op"`
@@ -479,6 +525,7 @@ func TestHandler_PatchAuthMode(t *testing.T) {
 		reader = bytes.NewReader(bodypatch)
 		req = httptest.NewRequestWithContext(context.TODO(), http.MethodPatch, "/user/", reader)
 		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
 
 		w = httptest.NewRecorder()
 		mux.ServeHTTP(w, req)
@@ -490,6 +537,7 @@ func TestHandler_PatchAuthMode(t *testing.T) {
 		}
 	}
 
+	// AFTER CHANGE
 	reader = bytes.NewReader(b)
 	req = httptest.NewRequestWithContext(context.TODO(), http.MethodPost, "/token/", reader)
 	if err != nil {
@@ -516,18 +564,18 @@ func TestHandler_PatchAuthMode(t *testing.T) {
 		Error string `json:"error"`
 	}
 
-	var resp response
-	err = json.Unmarshal(data, &resp)
+	var firstFAresp response
+	err = json.Unmarshal(data, &firstFAresp)
 	if err != nil {
 		t.Errorf("expected error to be nil got %v, data %s", err, string(data))
 	}
 
 	_wantErr := ""
-	if resp.Error != _wantErr {
-		t.Errorf("expected %s got %v", _wantErr, resp.Error)
+	if firstFAresp.Error != _wantErr {
+		t.Errorf("expected %s got %v", _wantErr, firstFAresp.Error)
 	}
 
-	d, ok := resp.Data.(map[string]interface{})
+	d, ok = firstFAresp.Data.(map[string]interface{})
 	if !ok {
 		t.Errorf("expected error to be nil got %#v, data %s", resp, string(data))
 	}
