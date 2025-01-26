@@ -22,7 +22,7 @@ type MuxOpts struct {
 func NewMux(opts *MuxOpts) *http.ServeMux {
 	if opts == nil {
 		opts = &MuxOpts{
-			AuthMuxOpts: nil,
+			AuthMuxOpts: nil, // FIXME
 		}
 	}
 
@@ -34,7 +34,6 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 		hello := handlers.Hello()
 		helloMux.HandleFunc("GET /", func(writer http.ResponseWriter, request *http.Request) {
 			if request.URL.Path != "/" {
-
 				http.NotFound(writer, request)
 			} else {
 				hello(writer, request)
@@ -43,8 +42,10 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 
 		mux.Handle("/", helloMux)
 	}
-
+	// Routes that should be authenticated or part of authentication flow.
 	if opts.AuthMuxOpts != nil {
+		authMw := BearerAuthMiddleware(opts.Auth)
+
 		authHandlers, err := handlers.NewAuthHandler(opts.Auth, opts.Mail)
 		if err != nil {
 			panic(err)
@@ -53,30 +54,7 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 		mux.HandleFunc("POST /token/", authHandlers.AuthByUsernamePassword())
 		mux.HandleFunc("POST /otp/", authHandlers.SubmitOtp())
 
-		mustAuth := MiddleWare(func(next http.HandlerFunc) http.HandlerFunc {
-			return func(writer http.ResponseWriter, request *http.Request) {
-				authv := request.Header["Authorization"]
-
-				isAuth := false
-				if len(authv) == 1 {
-					if authv[0][0:len("Bearer ")] == "Bearer " && len(authv[0]) > len("Bearer ") {
-						token := authv[0][len("Bearer "):]
-						_, err := opts.Auth.ValidateAndGetClaims(token)
-						if err == nil {
-							isAuth = true
-						}
-					}
-				}
-
-				if isAuth {
-					next(writer, request)
-				} else {
-					writer.WriteHeader(http.StatusUnauthorized)
-				}
-			}
-		})
-
-		mux.HandleFunc("PATCH /user/", mustAuth(authHandlers.PatchUser()))
+		mux.HandleFunc("PATCH /user/", authMw(authHandlers.PatchUser()))
 	}
 
 	return mux
