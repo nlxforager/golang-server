@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -13,7 +14,12 @@ import (
 	"golang-server/cmd/servers/auth/mux"
 	"golang-server/src/config"
 	gctx "golang-server/src/context"
+	"golang-server/src/domain/auth"
 	"golang-server/src/log"
+
+	"github.com/redis/go-redis/v9"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -39,7 +45,29 @@ func main() {
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
 	// HTTP Server
 	{
-		mux := mux.NewMux(nil)
+		pgConfig, _ := config.GetPostGresConfig() // allow server to run without db conn.
+
+		db, err := sql.Open("postgres", pgConfig.CONNECTION_STRING)
+		if err != nil {
+			panic(err)
+		}
+		defer db.Close()
+
+		redisClient := redis.NewClient(&redis.Options{})
+		authService, err := auth.NewService(
+			&auth.Repository{}, redisClient, "", "notsosecret",
+		)
+
+		if err != nil {
+			l.LogAttrs(ctx, log.LevelSystem, "failed to initialize auth service")
+			panic(err)
+		}
+		mux := mux.NewMux(&mux.MuxOpts{
+			AuthMuxOpts: &mux.AuthMuxOpts{
+				Auth: authService,
+				Mail: nil,
+			},
+		})
 		http.ListenAndServe("", mux)
 	}
 

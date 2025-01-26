@@ -1,4 +1,4 @@
-package authservice
+package auth
 
 type PasswordHasher struct {
 	secret string

@@ -1,4 +1,4 @@
-package authservice
+package auth
 
 type AUTH_MODE string
 

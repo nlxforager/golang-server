@@ -1,27 +1,39 @@
-package authservice
+package auth
 
 import (
 	"context"
 	"errors"
-	"golang-server/src/domain/authservice/otp"
 	"time"
+
+	"golang-server/src/domain/auth/jwt"
+	"golang-server/src/domain/auth/otp"
+
+	"github.com/redis/go-redis/v9"
 )
-import "github.com/redis/go-redis/v9"
 
 type Service struct {
-	Repo  Repository
-	Redis *redis.Client
+	Repo         Repository
+	Redis        *redis.Client
+	JwtIssuer    string
+	JwtSecretKey string
 }
 
 var _ AuthService = (*Service)(nil)
 
-func NewService(repository *Repository, redisa *redis.Client) (*Service, error) {
+func NewService(repository *Repository, redisa *redis.Client, issuer string, secret string) (*Service, error) {
 	if repository == nil || redisa == nil {
 		return nil, errors.New("persistence is nil")
 	}
+
+	if issuer == "" || secret == "" {
+		return nil, errors.New("jwt config fail.")
+	}
+
 	return &Service{
-		Repo:  Repository{},
-		Redis: redisa,
+		Repo:         Repository{},
+		Redis:        redisa,
+		JwtIssuer:    issuer,
+		JwtSecretKey: secret,
 	}, nil
 }
 
@@ -135,16 +147,42 @@ func (s Service) OtpGen() func() string {
 }
 
 func (s Service) CreateWeakToken(username string, authMode AUTH_MODE) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	service := jwt.Service{
+		SecretKey: s.JwtSecretKey,
+		Issuer:    s.JwtIssuer,
+	}
+
+	return service.CreateWeakToken(username, map[string]string{
+		"auth_mode": string(authMode),
+	})
 }
 
 func (s Service) CreateStrongToken(username string, authMode AUTH_MODE) (string, error) {
-	//TODO implement me
-	panic("implement me")
+	service := jwt.Service{
+		SecretKey: s.JwtSecretKey,
+		Issuer:    s.JwtIssuer,
+	}
+
+	return service.CreateWeakToken(username, map[string]string{
+		"auth_mode": string(authMode),
+		"is_auth":   "true",
+	})
 }
 
 func (s Service) ValidateAndGetClaims(tokenString string) (map[string]string, error) {
-	//TODO implement me
-	panic("implement me")
+	service := jwt.Service{
+		SecretKey: s.JwtSecretKey,
+		Issuer:    s.JwtIssuer,
+	}
+	claims, err := service.GetClaims(tokenString)
+	if err != nil {
+		return nil, err
+	}
+
+	cmap := make(map[string]string)
+	for k, v := range claims {
+		vv, _ := v.(string)
+		cmap[k] = vv
+	}
+	return cmap, nil
 }

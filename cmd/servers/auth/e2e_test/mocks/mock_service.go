@@ -4,9 +4,9 @@ import (
 	"errors"
 	"time"
 
-	"golang-server/src/domain/authservice"
-	"golang-server/src/domain/authservice/jwt"
-	"golang-server/src/domain/authservice/otp"
+	"golang-server/src/domain/auth"
+	"golang-server/src/domain/auth/jwt"
+	"golang-server/src/domain/auth/otp"
 )
 
 type MockUser struct {
@@ -52,7 +52,7 @@ func (m MockAuth) ValidateAndGetClaims(tokenString string) (map[string]string, e
 	return cmap, nil
 }
 
-func (m MockAuth) ModifyUser(username string, set authservice.ChangeSet) error {
+func (m MockAuth) ModifyUser(username string, set auth.ChangeSet) error {
 	u, ok := m.UserByUsernames[username]
 	if !ok {
 		return errors.New("user not found")
@@ -72,7 +72,7 @@ func (m MockAuth) RegisterUsernamePassword(username, password string) error {
 		Username: username,
 		Password: password,
 		Email:    "",
-		Mode:     string(authservice.AUTH_MODE_SIMPLE_PW),
+		Mode:     string(auth.AUTH_MODE_SIMPLE_PW),
 	}
 
 	return nil
@@ -85,14 +85,14 @@ func mockJwtService() jwt.Service {
 	}
 }
 
-func (m MockAuth) CreateWeakToken(username string, authMode authservice.AUTH_MODE) (string, error) {
+func (m MockAuth) CreateWeakToken(username string, authMode auth.AUTH_MODE) (string, error) {
 	service := mockJwtService()
 	return service.CreateWeakToken(username, map[string]string{
 		"auth_mode": string(authMode),
 	})
 }
 
-func (m MockAuth) CreateStrongToken(username string, authMode authservice.AUTH_MODE) (string, error) {
+func (m MockAuth) CreateStrongToken(username string, authMode auth.AUTH_MODE) (string, error) {
 	service := mockJwtService()
 	return service.CreateWeakToken(username, map[string]string{
 		"auth_mode": string(authMode),
@@ -150,19 +150,19 @@ func (m MockAuth) VerifyOTP(otpVal string, token string) error {
 	return nil
 }
 
-func (m MockAuth) ByPasswordAndUsername(username, password string) (error, *authservice.User) {
+func (m MockAuth) ByPasswordAndUsername(username, password string) (error, *auth.User) {
 	u := m.UserByUsernames[username]
 	if password == u.Password {
-		return nil, &authservice.User{
+		return nil, &auth.User{
 			Username: username,
-			AuthMode: authservice.AUTH_MODE(u.Mode),
+			AuthMode: auth.AUTH_MODE(u.Mode),
 		}
 	}
 
 	return errors.New("wrong username or password"), nil
 }
 
-var _ authservice.AuthService = (*MockAuth)(nil)
+var _ auth.AuthService = (*MockAuth)(nil)
 
 func NewMockAuth() *MockAuth {
 	return &MockAuth{
