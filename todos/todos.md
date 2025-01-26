@@ -90,6 +90,11 @@ The user can decide which to use, with the default being 1FA during registration
             - [x] returns `token` as strong.
 
 #### TODO: Implementation
+
+Overarching Service Interfaces:
+- [ ] `Auth.AuthService`
+- [ ] `Mail email.EmailService`
+- 
 - [ ] login
   - [ ] via password with 2FA (password, then email otp)
     - [ ] Factor 1: username/password
