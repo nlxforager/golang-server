@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"golang-server/src/domain/email"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"golang-server/src/config"
 	gctx "golang-server/src/context"
 	"golang-server/src/domain/auth"
+	"golang-server/src/domain/email"
 	"golang-server/src/log"
 
 	"github.com/redis/go-redis/v9"

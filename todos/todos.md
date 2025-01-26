@@ -92,8 +92,8 @@ The user can decide which to use, with the default being 1FA during registration
 #### TODO: Implementation
 
 Overarching Service Interfaces:
-- [ ] `Auth.AuthService`
-- [ ] `Mail email.EmailService`
+- [x] `Auth.AuthService`
+- [x] `Mail email.EmailService`
 - 
 - [ ] login
   - [ ] via password with 2FA (password, then email otp)
