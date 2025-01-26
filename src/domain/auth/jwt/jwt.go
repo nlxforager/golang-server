@@ -42,17 +42,10 @@ func (a *Service) GetAuthModeFromToken(tokenString string) (string, error) {
 
 // Function to create Service tokens with claims
 func (a *Service) GetClaimFromToken(tokenString string, claim string) (string, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte(a.SecretKey), nil
-	})
+	maps, err := a.GetClaims(tokenString)
 	if err != nil {
 		return "", err
 	}
-	if !token.Valid {
-		return "", fmt.Errorf("invalid token")
-	}
-
-	maps, _ := token.Claims.(jwt.MapClaims)
 	field, _ := maps[claim].(string)
 	return field, nil
 }
@@ -67,4 +60,19 @@ func (a *Service) signToken(claims jwt.MapClaims) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+func (a *Service) GetClaims(tokenString string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(a.SecretKey), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !token.Valid {
+		return nil, fmt.Errorf("invalid token")
+	}
+
+	maps, _ := token.Claims.(jwt.MapClaims)
+	return maps, nil
 }

@@ -87,6 +87,7 @@ The user can decide which to use, with the default being 1FA during registration
         `POST /otp/", authHandlers.SubmitOtp()`
         - [x] submit {`weak_token`, otp} for validation
           - [x] returns 200 if ok.
+            - [x] returns `token` as strong.
 
 #### TODO: Implementation
 - [ ] login

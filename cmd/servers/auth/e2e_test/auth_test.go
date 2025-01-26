@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -142,8 +142,6 @@ func TestHandler_Password_2FA_OK(t *testing.T) {
 	token, _ := jwt.Parse(pwOkToken, nil) // skip verify err since secret is server-side
 	claims, _ := token.Claims.(jwt.MapClaims)
 
-	fmt.Println("Decoded Claims:", claims)
-
 	_, ok = claims["is_auth"]
 	if ok {
 		t.Fatal("expected token to be authenticated")
@@ -193,11 +191,47 @@ func TestHandler_Password_2FA_OK(t *testing.T) {
 	otpSubmitRes := w.Result()
 	defer otpSubmitRes.Body.Close()
 
-	var v any
+	type OtpResponse struct {
+		Data  any    `json:"data"`
+		Error string `json:"error"`
+	}
+
+	var v OtpResponse
 	err = json.NewDecoder(otpSubmitRes.Body).Decode(&v)
+	if err != nil {
+		t.Errorf("expected error to be nil got %v", err)
+	}
 
 	if otpSubmitRes.StatusCode != http.StatusOK {
 		t.Errorf("otpSubmitRes expected status code to be %v got %v, body %#v", http.StatusOK, otpSubmitRes.StatusCode, v)
+	}
+
+	_wantErr = ""
+	if resp.Error != _wantErr {
+		t.Errorf("expected %s got %v", _wantErr, resp.Error)
+	}
+
+	d, ok = v.Data.(map[string]interface{})
+	if !ok {
+		t.Errorf("expected error to be nil got %#v, data %s", resp, string(data))
+	}
+	log.Printf("%#v", d)
+	if d["weak_token"] != nil {
+		t.Errorf("expected nil weak_token got %v", d["weak_token"])
+	}
+	if d["token"] == nil {
+		t.Errorf("expected token got %v", d["token"])
+	}
+
+	otpOkToken, _ := d["token"].(string)
+	token, _ = jwt.Parse(otpOkToken, nil)
+	claims, _ = token.Claims.(jwt.MapClaims)
+	is, ok := claims["is_auth"].(string)
+	if !ok {
+		t.Errorf("expected is_auth to be non-nil got %v", is)
+	}
+	if is != "true" {
+		t.Errorf("expected is_auth to be true got %v", is)
 	}
 }
 
@@ -291,7 +325,6 @@ func TestHandler_Password_Simple(t *testing.T) {
 
 	token, _ := jwt.Parse(pwOkToken, nil)
 	claims, _ := token.Claims.(jwt.MapClaims)
-	t.Logf("Decoded Claimssss: %v", claims)
 	is, ok := claims["is_auth"].(string)
 	if !ok {
 		t.Errorf("expected is_auth to be non-nil got %v", is)

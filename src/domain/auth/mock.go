@@ -38,6 +38,23 @@ type MockAuth struct {
 	Generator otp.OtpMockGenerator
 }
 
+func (m MockAuth) ValidateAndGetClaims(tokenString string) (map[string]string, error) {
+	service := mockJwtService()
+	claims, err := service.GetClaims(tokenString)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cmap := make(map[string]string)
+
+	for k, v := range claims {
+		vv, _ := v.(string)
+		cmap[k] = vv
+	}
+	return cmap, nil
+}
+
 func (m MockAuth) ModifyUser(username string, set ChangeSet) error {
 	u, ok := m.UserByUsernames[username]
 	if !ok {

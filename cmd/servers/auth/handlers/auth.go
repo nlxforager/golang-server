@@ -202,6 +202,10 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 					form := &OTP{}
 
 					var err error
+
+					var claims map[string]string
+					var token string
+
 					if err = json.NewDecoder(r.Body).Decode(form); err != nil {
 						goto prevalidation
 					}
@@ -209,10 +213,20 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 						err = fmt.Errorf("insufficent otp or token")
 						goto prevalidation
 					}
+
 					if err = h.AuthService.VerifyOTP(*form.Otp, *form.Token); err != nil {
 						err = fmt.Errorf("otp and token invalid")
+
 					}
 
+					claims, err = h.AuthService.ValidateAndGetClaims(*form.Token)
+					if err != nil {
+						goto prevalidation
+					}
+					token, err = h.AuthService.CreateStrongToken(claims["sub"], auth.AUTH_MODE(claims["auth_mode"]))
+					if err != nil {
+						goto prevalidation
+					}
 				prevalidation:
 					{
 						if err != nil {
@@ -226,7 +240,9 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 					}{
 						Data: struct {
 							Token string `json:"token"`
-						}{},
+						}{
+							Token: token,
+						},
 					})
 				},
 			},

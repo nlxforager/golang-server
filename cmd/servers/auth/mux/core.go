@@ -29,7 +29,6 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	{
-
 		helloMux := http.NewServeMux()
 
 		hello := handlers.Hello()
