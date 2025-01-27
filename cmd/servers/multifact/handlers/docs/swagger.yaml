@@ -1,0 +1,254 @@
+definitions:
+  handlers.AuthUsernameResourceBody:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  handlers.ErrorResponseBody:
+    properties:
+      error:
+        type: string
+    type: object
+  handlers.OTP:
+    properties:
+      otp:
+        type: string
+      weak_token:
+        type: string
+    type: object
+  handlers.PatchRequestBody:
+    type: object
+  handlers.RequestBody:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  handlers.SubmitOtpResponseBody:
+    properties:
+      data:
+        $ref: '#/definitions/handlers.SubmitOtpResponseData'
+    type: object
+  handlers.SubmitOtpResponseData:
+    properties:
+      token:
+        type: string
+    type: object
+  handlers.TokenResponseData:
+    properties:
+      redirect_url:
+        type: string
+      username:
+        type: string
+      weak_token:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      - text/html
+      description: Returns a hello message in different formats based on the "Accept"
+        header.
+      produces:
+      - application/json
+      - text/html
+      responses:
+        "200":
+          description: JSON response with a hello message
+          schema:
+            additionalProperties: true
+            type: object
+        "406":
+          description: Invalid Accept Header
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Hello World
+      tags:
+      - Hello
+  /otp/:
+    post:
+      consumes:
+      - application/json
+      description: Verifies the provided OTP and token, and generates a strong authentication
+        token upon successful validation.
+      parameters:
+      - description: OTP and Token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.OTP'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP successfully verified, returns a strong token
+          schema:
+            $ref: '#/definitions/handlers.SubmitOtpResponseBody'
+        "400":
+          description: Insufficient OTP or token
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponseBody'
+        "401":
+          description: Unauthorized - invalid OTP or token
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponseBody'
+        "406":
+          description: Invalid Accept Header
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponseBody'
+      summary: Submit OTP for Authentication
+      tags:
+      - Authentication
+  /register/:
+    post:
+      consumes:
+      - application/json
+      description: Registers a user by accepting a username and password in JSON format.
+      parameters:
+      - description: Username and Password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.RequestBody'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            type: string
+        "400":
+          description: Insufficient username or password
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponseBody'
+        "406":
+          description: Invalid Accept Header
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponseBody'
+      summary: Register a new user
+      tags:
+      - Authentication
+  /swagger:
+    get:
+      description: swagger docs
+      parameters:
+      - description: file name
+        enum:
+        - index.html
+        - doc.json
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok, html or json
+          headers:
+            Content-Type:
+              description: content type
+              type: string
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: integer
+        "500":
+          description: Internal Server Error
+          schema:
+            type: integer
+      summary: swagger api
+      tags:
+      - accounts
+  /token/:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user with username and password. Depending on the
+        authentication mode, a strong token or OTP process is initiated.
+      parameters:
+      - description: Username and Password
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.AuthUsernameResourceBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Authentication successful
+          schema:
+            $ref: '#/definitions/handlers.TokenResponseData'
+        "400":
+          description: Insufficient username or password
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponseBody'
+        "401":
+          description: Unauthorized - invalid credentials
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponseBody'
+        "406":
+          description: Invalid Accept Header
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponseBody'
+      summary: Authenticate user
+      tags:
+      - Authentication
+  /user/:
+    patch:
+      consumes:
+      - application/json
+      description: Allows modifying user details, such as authentication mode and
+        email, through a patch operation.
+      parameters:
+      - description: Patch operation details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.PatchRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User modified successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request - Invalid input or multiple patches provided
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponseBody'
+        "406":
+          description: Invalid Accept Header
+          schema:
+            type: string
+      summary: Modify User Details
+      tags:
+      - User
+swagger: "2.0"

@@ -33,14 +33,14 @@ func NewAuthHandler(authService auth.Authenticator, mailService email.OTPEmailer
 	return ah, nil
 }
 
+type RequestBody struct {
+	Username *string `json:"username"`
+	Password *string `json:"password"`
+}
+
 func (h *AuthHandler) RegisterUsernamePassword() func(w http.ResponseWriter, r *http.Request) {
 	l := log.Logger.With(slog.String("handler", "AuthHandler"))
 	l.Info("AuthHandler::RegisterUsernamePassword")
-
-	type RequestBody struct {
-		Username *string `json:"username"`
-		Password *string `json:"password"`
-	}
 
 	options := Options{
 		AcceptFuncsOpts: AcceptFuncsOpts{
@@ -81,20 +81,28 @@ func (h *AuthHandler) RegisterUsernamePassword() func(w http.ResponseWriter, r *
 	}
 }
 
+type AuthUsernameResourceBody struct {
+	Username *string `json:"username"`
+	Password *string `json:"password"`
+}
+type TokenResponseData struct {
+	Username    *string `json:"username"`
+	WeakToken   string  `json:"weak_token"`
+	RedirectUrl string  `json:"redirect_url"`
+}
+type TokenResponseBody_200 struct {
+	Data TokenResponseData `json:"data"`
+}
+
 func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *http.Request) {
 	l := log.Logger.With(slog.String("handler", "AuthHandler"))
 	l.Info("AuthHandler::AuthByUsernamePassword")
-
-	type RequestBody struct {
-		Username *string `json:"username"`
-		Password *string `json:"password"`
-	}
 
 	options := Options{
 		AcceptFuncsOpts: AcceptFuncsOpts{
 			AcceptFuncs: map[string]AcceptFunc{
 				"application/json": func(w http.ResponseWriter, r *http.Request) {
-					form := &RequestBody{}
+					form := &AuthUsernameResourceBody{}
 					json.NewDecoder(r.Body).Decode(form)
 
 					var err error
@@ -154,14 +162,9 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 							w.WriteHeader(http.StatusInternalServerError)
 							return
 						}
-						json.NewEncoder(w).Encode(struct {
-							Data any `json:"data"`
-						}{
-							Data: struct {
-								Username    *string `json:"username"`
-								WeakToken   string  `json:"weak_token"`
-								RedirectUrl string  `json:"redirect_url"`
-							}{
+
+						json.NewEncoder(w).Encode(TokenResponseBody_200{
+							Data: TokenResponseData{
 								Username:    form.Username,
 								RedirectUrl: "/otp/",
 								WeakToken:   weakToken,
@@ -190,6 +193,13 @@ func (h *AuthHandler) AuthByUsernamePassword() func(w http.ResponseWriter, r *ht
 type OTP struct {
 	Otp   *string `json:"otp"`
 	Token *string `json:"weak_token"`
+}
+
+type SubmitOtpResponseBody struct {
+	Data SubmitOtpResponseData
+}
+type SubmitOtpResponseData struct {
+	Token string `json:"token"`
 }
 
 func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
@@ -236,12 +246,8 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 
-					json.NewEncoder(w).Encode(struct {
-						Data any `json:"data"`
-					}{
-						Data: struct {
-							Token string `json:"token"`
-						}{
+					json.NewEncoder(w).Encode(SubmitOtpResponseBody{
+						Data: SubmitOtpResponseData{
 							Token: token,
 						},
 					})
@@ -259,24 +265,24 @@ func (h *AuthHandler) SubmitOtp() func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type Patch struct {
+	Op       string          `json:"op"`
+	Username string          `json:"username"`
+	Mode     *auth.AUTH_MODE `json:"auth_mode"`
+	Email    *string         `json:"email"`
+}
+type PatchRequestBody []Patch
+
 func (h *AuthHandler) PatchUser() func(w http.ResponseWriter, r *http.Request) {
 	l := log.Logger.With(slog.String("handler", "authService"))
 	l.Info("AuthHandler::PatchUser")
-
-	type Patch struct {
-		Op       string          `json:"op"`
-		Username string          `json:"username"`
-		Mode     *auth.AUTH_MODE `json:"auth_mode"`
-		Email    *string         `json:"email"`
-	}
-	type PatchBody []Patch
 
 	options := Options{
 		AcceptFuncsOpts: AcceptFuncsOpts{
 			AcceptFuncs: map[string]AcceptFunc{
 				"application/json": func(w http.ResponseWriter, r *http.Request) {
 					l.Info("AuthHandler::PatchUser()")
-					patches := PatchBody{}
+					patches := PatchRequestBody{}
 					var err error
 					if err = json.NewDecoder(r.Body).Decode(&patches); err != nil {
 						w.WriteHeader(http.StatusBadRequest)
@@ -333,9 +339,9 @@ func (h *AuthHandler) PatchUser() func(w http.ResponseWriter, r *http.Request) {
 //			AcceptFuncs: map[string]AcceptFunc{
 //				"application/json": func(w http.ResponseWriter, r *http.Request) {
 //					json.NewEncoder(w).Encode(struct {
-//						Data any `json:"data"`
+//						TokenResponseBody_200 any `json:"data"`
 //					}{
-//						Data: struct {
+//						TokenResponseBody_200: struct {
 //							SubmitUrl string `json:"submit_url"`
 //						}{
 //							SubmitUrl: "/otp/",

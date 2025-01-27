@@ -9,16 +9,6 @@ import (
 	"golang-server/src/log"
 )
 
-// @Summary Hello World
-// @Description Returns a hello message in different formats based on the "Accept" header.
-// @Tags Hello
-// @Accept json
-// @Accept text/html
-// @Produce json
-// @Produce text/html
-// @Success 200 {object} map[string]interface{} "JSON response with a hello message"
-// @Failure 406 {object} map[string]string "Invalid Accept Header"
-// @Router / [get]
 func Hello() func(w http.ResponseWriter, r *http.Request) {
 	l := log.Logger.With(slog.String("handler", "hello_world"))
 	l.Info("hello world")

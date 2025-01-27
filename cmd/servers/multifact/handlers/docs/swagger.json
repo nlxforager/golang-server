@@ -1,0 +1,384 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/": {
+            "get": {
+                "description": "Returns a hello message in different formats based on the \"Accept\" header.",
+                "consumes": [
+                    "application/json",
+                    "text/html"
+                ],
+                "produces": [
+                    "application/json",
+                    "text/html"
+                ],
+                "tags": [
+                    "Hello"
+                ],
+                "summary": "Hello World",
+                "responses": {
+                    "200": {
+                        "description": "JSON response with a hello message",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "406": {
+                        "description": "Invalid Accept Header",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/otp/": {
+            "post": {
+                "description": "Verifies the provided OTP and token, and generates a strong authentication token upon successful validation.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Submit OTP for Authentication",
+                "parameters": [
+                    {
+                        "description": "OTP and Token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.OTP"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP successfully verified, returns a strong token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SubmitOtpResponseBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Insufficient OTP or token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - invalid OTP or token",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponseBody"
+                        }
+                    },
+                    "406": {
+                        "description": "Invalid Accept Header",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/register/": {
+            "post": {
+                "description": "Registers a user by accepting a username and password in JSON format.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Register a new user",
+                "parameters": [
+                    {
+                        "description": "Username and Password",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.RequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "User registered successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Insufficient username or password",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponseBody"
+                        }
+                    },
+                    "406": {
+                        "description": "Invalid Accept Header",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/swagger": {
+            "get": {
+                "description": "swagger docs",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "swagger api",
+                "parameters": [
+                    {
+                        "enum": [
+                            "index.html",
+                            "doc.json"
+                        ],
+                        "type": "string",
+                        "description": "file name",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ok, html or json",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "headers": {
+                            "Content-Type": {
+                                "type": "string",
+                                "description": "content type"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "/token/": {
+            "post": {
+                "description": "Authenticates a user with username and password. Depending on the authentication mode, a strong token or OTP process is initiated.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Authenticate user",
+                "parameters": [
+                    {
+                        "description": "Username and Password",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.AuthUsernameResourceBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Authentication successful",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.TokenResponseData"
+                        }
+                    },
+                    "400": {
+                        "description": "Insufficient username or password",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponseBody"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - invalid credentials",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponseBody"
+                        }
+                    },
+                    "406": {
+                        "description": "Invalid Accept Header",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponseBody"
+                        }
+                    }
+                }
+            }
+        },
+        "/user/": {
+            "patch": {
+                "description": "Allows modifying user details, such as authentication mode and email, through a patch operation.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Modify User Details",
+                "parameters": [
+                    {
+                        "description": "Patch operation details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.PatchRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User modified successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid input or multiple patches provided",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponseBody"
+                        }
+                    },
+                    "406": {
+                        "description": "Invalid Accept Header",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "handlers.AuthUsernameResourceBody": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.ErrorResponseBody": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.OTP": {
+            "type": "object",
+            "properties": {
+                "otp": {
+                    "type": "string"
+                },
+                "weak_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.PatchRequestBody": {
+            "type": "object"
+        },
+        "handlers.RequestBody": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.SubmitOtpResponseBody": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/handlers.SubmitOtpResponseData"
+                }
+            }
+        },
+        "handlers.SubmitOtpResponseData": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.TokenResponseData": {
+            "type": "object",
+            "properties": {
+                "redirect_url": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "weak_token": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

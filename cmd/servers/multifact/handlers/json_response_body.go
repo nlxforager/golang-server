@@ -2,21 +2,21 @@ package handlers
 
 import "encoding/json"
 
-type ResponseBodyJSON struct {
+type ErrorResponseBody struct {
 	Error string `json:"error"`
 }
 
-func (r ResponseBodyJSON) ToBytes() []byte {
+func (r ErrorResponseBody) ToBytes() []byte {
 	json, _ := json.Marshal(r)
 	return json
 }
 
-func AsError(err error) ResponseBodyJSON {
+func AsError(err error) ErrorResponseBody {
 	var errString string
 	if err != nil {
 		errString = err.Error()
 	}
-	return ResponseBodyJSON{
+	return ErrorResponseBody{
 		Error: errString,
 	}
 }
