@@ -71,7 +71,6 @@ func main() {
 	} else {
 		l.LogAttrs(ctx, slog.LevelInfo, "ok JetStream", slog.String("client url", natsUrl))
 	}
-	ctx, _ = context.WithTimeoutCause(ctx, 299*time.Second, fmt.Errorf("timedout_main"))
 
 	stream1Name := "stream-1"
 	stream2Name := "stream-2"

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -41,7 +40,6 @@ func main() {
 	l := log.Logger.With(gctx.AsAttributes(ctx)...)
 	l.LogAttrs(ctx, log.LevelSystem, "started")
 
-	ctx, _ = context.WithTimeoutCause(ctx, 100*time.Second, fmt.Errorf("timedout_main"))
 	interruptSignal := make(chan os.Signal, 1)
 	signal.Notify(interruptSignal, syscall.SIGINT /*keyboard input*/, syscall.SIGTERM /*process kill*/)
 	// HTTP Server
@@ -76,17 +74,24 @@ func main() {
 				Mail: mailService,
 			},
 		})
-		http.ListenAndServe("", mux)
+		go http.ListenAndServe("", mux)
 	}
 
 	// defer ns.Shutdown() // not called, the library will handle.
 
 	// Teardown
-	select {
-	case <-interruptSignal:
-		l.LogAttrs(ctx, log.LevelSystem, "interrupt or terminated")
-	case <-ctx.Done():
-		l.LogAttrs(ctx, log.LevelSystem, "ctx.Done() received", slog.String("error", context.Cause(ctx).Error()))
+teardown:
+	for {
+		select {
+		case <-time.NewTicker(5 * time.Second).C:
+			l.LogAttrs(ctx, log.LevelSystem, "tick")
+		case <-interruptSignal:
+			l.LogAttrs(ctx, log.LevelSystem, "interrupt or terminated")
+			break teardown
+		case <-ctx.Done():
+			l.LogAttrs(ctx, log.LevelSystem, "ctx.Done() received", slog.String("error", context.Cause(ctx).Error()))
+			break teardown
+		}
 	}
 
 	l.LogAttrs(ctx, log.LevelSystem, "exited")
