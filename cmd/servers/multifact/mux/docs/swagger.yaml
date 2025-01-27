@@ -1,4 +1,38 @@
 info:
   contact: {}
-paths: {}
+paths:
+  /swagger:
+    get:
+      description: swagger docs
+      parameters:
+      - description: file name
+        enum:
+        - index.html
+        - doc.json
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok, html or json
+          headers:
+            Content-Type:
+              description: content type
+              type: string
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: integer
+        "500":
+          description: Internal Server Error
+          schema:
+            type: integer
+      summary: swagger api
+      tags:
+      - accounts
 swagger: "2.0"

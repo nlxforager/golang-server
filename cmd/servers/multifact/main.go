@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"net/http"
 	"os"
@@ -19,7 +18,10 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	// DO NOT EDIT ORDER
 	_ "github.com/lib/pq"
+	// DO NOT EDIT
+	"database/sql"
 )
 
 func main() {

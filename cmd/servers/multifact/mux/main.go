@@ -3,14 +3,16 @@ package mux
 
 import (
 	"fmt"
-	swagger "github.com/swaggo/http-swagger"
 	"net/http"
 	"reflect"
 
 	"golang-server/cmd/servers/multifact/handlers"
+	"golang-server/cmd/servers/multifact/mux/docs"
 	"golang-server/cmd/servers/multifact/mux/middlewares"
 	"golang-server/src/domain/auth"
 	"golang-server/src/domain/email"
+
+	swagger "github.com/swaggo/http-swagger"
 )
 
 type AuthMuxOpts struct {
@@ -20,6 +22,21 @@ type AuthMuxOpts struct {
 
 type MuxOpts struct {
 	*AuthMuxOpts
+}
+
+// ShowAccount godoc
+// @Summary      swagger api
+// @Description  swagger docs
+// @Tags         accounts
+// @Produce      json
+// @Param        id   query      string  true  "file name" 	Enums(index.html, doc.json)
+// @Success 200 {string} string "ok, html or json"
+// @Header       200              {string}  Content-Type  "content type"
+// @Failure      404  {object}  int
+// @Failure      500  {object}  int
+// @Router       /swagger [get]
+func swagHandler(w http.ResponseWriter, r *http.Request) {
+	swagger.Handler()(w, r)
 }
 
 // NewMux The closes entry point sans sockets.
@@ -37,18 +54,10 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 
 		hello := handlers.Hello()
 
-		// PingExample godoc
-		// @Summary ping example
-		// @Schemes
-		// @Description do ping
-		// @Tags example
-		// @Accept json
-		// @Produce json
-		// @Success 200 {string} Helloworld
-		// @Router /example/helloworld [get]
-		helloMux.HandleFunc("GET /swagger", func(writer http.ResponseWriter, request *http.Request) {
-			swagger.Handler()(writer, request)
-		})
+		docs.SwaggerInfo.Description = "This is a ? server."
+		docs.SwaggerInfo.Title = "multifact"
+
+		helloMux.HandleFunc("GET /swagger", swagHandler)
 
 		helloMux.HandleFunc("GET /", middlewares.LogMiddleware(func(writer http.ResponseWriter, request *http.Request) {
 			if request.URL.Path != "/" {
@@ -73,7 +82,18 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 		mux.HandleFunc("POST /register/", middlewares.LogMiddleware(authHandlers.RegisterUsernamePassword()))
 		mux.HandleFunc("POST /token/", middlewares.LogMiddleware(authHandlers.AuthByUsernamePassword()))
 		mux.HandleFunc("POST /otp/", middlewares.LogMiddleware(authHandlers.SubmitOtp()))
-
+		// ShowAccount godoc
+		// @Summary      Show an account
+		// @Description  get string by ID
+		// @Tags         accounts
+		// @Accept       json
+		// @Produce      json
+		// @Param        id   path      int  true  "Account ID"
+		// @Success      200  {object}  model.Account
+		// @Failure      400  {object}  httputil.HTTPError
+		// @Failure      404  {object}  httputil.HTTPError
+		// @Failure      500  {object}  httputil.HTTPError
+		// @Router       /accounts/{id} [get]
 		mux.HandleFunc("PATCH /user/", middlewares.LogMiddleware.Wrap(authMw)(authHandlers.PatchUser()))
 
 		/*
@@ -89,17 +109,9 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 				{"data": {"message": "Hello World"}}
 
 			POST /register/
-
-
-
-
-
 			POST /token/
 			POST /otp/
 			PATCH /user/
-
-
-
 		*/
 	}
 
@@ -122,3 +134,10 @@ func NewMux(opts *MuxOpts) *http.ServeMux {
 
 	return mux
 }
+
+//GET /swagger
+//GET /
+//POST /register/
+//POST /token/
+//POST /otp/
+//PATCH /user/
