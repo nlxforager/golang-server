@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>
+        API DOCS
+    </title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+
+        h1 {
+            color: #5c6bc0;
+        }
+
+        .endpoint-card {
+            margin-bottom: 40px;
+        }
+
+        .endpoint-title {
+            font-weight: bold;
+            color: #3f51b5;
+        }
+
+        .endpoint-body {
+            margin-left: 20px;
+            font-family: "Courier New", monospace;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+            word-wrap: break-word;
+            color: #424242;
+            /*font-weight: bold;*/
+        }
+
+        .http-line {
+            color: #424242;
+            /*font-weight: bold;*/
+        }
+
+        .req-res-body {
+            background-color: #e8f5e9;
+            color: #2c6e2f;
+        }
+
+        .response-body {
+            background-color: #fff3e0;
+            color: #e65100;
+        }
+
+
+       c {
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap; /* Allows text to wrap, preserving indentation */
+            word-wrap: break-word;
+            padding: 0 5px 0 5px;
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+    </style>
+</head>
+
+<body>
+<div class="endpoint-body">
+    <div class="endpoint-title">
+        Health Check
+    </div>
+    <div class="endpoint-description">
+        An endpoint to check simple heartbeat. Only accepts <c>application/json</c>.
+    </div>
+    <div class="endpoint-card">
+        <div style=" text-align: center; font-weight: bolder">REQUEST</div>
+        <div class="req-res-body">
+            <div class="http-line">GET / HTTP/1.1</div>
+            <div class="http-line">Accept: application/json</div>
+        </div>
+
+        <div style=" text-align: center; font-weight: bolder">RESPONSE</div>
+        <div class="req-res-body">
+            <div class="http-line">HTTP/?.? 200 OK</div>
+            <div class="http-line">{"data": {"message": "Hello World"}}</div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

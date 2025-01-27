@@ -11,7 +11,7 @@ func main() {
 
 func send(body string) {
 	from := "noellimxaws@gmail.com"
-	pass := "zenb rnso yglb jamy"
+	pass := ""
 	to := "noellimx@gmail.com"
 
 	msg := "From: " + from + "\n" +

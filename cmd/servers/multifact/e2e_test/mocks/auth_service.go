@@ -162,7 +162,7 @@ func (m MockAuth) ByPasswordAndUsername(username, password string) (error, *auth
 	return errors.New("wrong username or password"), nil
 }
 
-var _ auth.AuthService = (*MockAuth)(nil)
+var _ auth.Authenticator = (*MockAuth)(nil)
 
 func NewMockAuth() *MockAuth {
 	return &MockAuth{

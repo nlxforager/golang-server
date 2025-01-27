@@ -13,13 +13,13 @@ import (
 )
 
 type AuthHandler struct {
-	AuthService auth.AuthService
+	AuthService auth.Authenticator
 	OtpEmailer  email.OTPEmailer
 }
 
-var _ auth.AuthService = &mocks.MockAuth{}
+var _ auth.Authenticator = &mocks.MockAuth{}
 
-func NewAuthHandler(authService auth.AuthService, mailService email.OTPEmailer) (*AuthHandler, error) {
+func NewAuthHandler(authService auth.Authenticator, mailService email.OTPEmailer) (*AuthHandler, error) {
 	if authService == nil {
 		return nil, fmt.Errorf("auth service is required")
 	}

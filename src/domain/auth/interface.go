@@ -23,7 +23,7 @@ type ChangeSet struct {
 	Email    *string
 }
 
-type AuthService interface {
+type Authenticator interface {
 	GetEmail(username string) (string, error)
 	ByPasswordAndUsername(username, password string) (error, *User)
 	RegisterUsernamePassword(username, password string) error

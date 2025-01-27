@@ -18,7 +18,7 @@ type Service struct {
 	JwtSecretKey string
 }
 
-var _ AuthService = (*Service)(nil)
+var _ Authenticator = (*Service)(nil)
 
 func NewService(repository *Repository, redisa *redis.Client, issuer string, secret string) (*Service, error) {
 	if repository == nil || redisa == nil {

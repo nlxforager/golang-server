@@ -3,7 +3,7 @@
 - Practice on design, coding and test for a backend server.
 - Boilerplate for future projects.
 
-See [todos](todos)
+See [todos](docs/todos)
 
 ## local development 
 `go run ./cmd/client_demos/nats` - Demonstration of a durable message broker.

@@ -31,22 +31,19 @@ func (mw MiddleWare) wrap(next MiddleWare) MiddleWare {
 
 var LogMiddleware MiddleWare = func(handlerFunc http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Log the request method and URL
+		currentTime := time.Now() // as close as possible to receive time
 
 		var sb strings.Builder
-		currentTime := time.Now()
-		sb.WriteString(currentTime.Format("2006-01-02 15:04:05.000") + "................................START................................\n")
+		sb.WriteString(currentTime.Format("2006-01-02 15:04:05.000") + "................................REQUEST................................\n")
 
 		sb.WriteString(fmt.Sprintf("%s %s %s\n", r.Method, r.URL.String(), r.Proto))
 
-		// Log the headers
 		for name, values := range r.Header {
 			for _, value := range values {
-				sb.WriteString(fmt.Sprintf("Header: %s: %s\n", name, value))
+				sb.WriteString(fmt.Sprintf("%s: %s\n", name, value))
 			}
 		}
 
-		// Read and log the body
 		if r.Body != nil {
 			bodyBytes, err := io.ReadAll(r.Body)
 			if err != nil {
@@ -68,6 +65,7 @@ var LogMiddleware MiddleWare = func(handlerFunc http.HandlerFunc) http.HandlerFu
 		}
 
 		handlerFunc(lrw, r)
+		sb.WriteString(time.Now().Format("2006-01-02 15:04:05.000") + "................................RESPONSE................................\n")
 
 		sb.WriteString(fmt.Sprintf("HTTP/?.? %d %s\n", lrw.statusCode, http.StatusText(lrw.statusCode)))
 
@@ -79,8 +77,7 @@ var LogMiddleware MiddleWare = func(handlerFunc http.HandlerFunc) http.HandlerFu
 
 		sb.WriteString(fmt.Sprintf("%s\n", lrw.body.String()))
 
-		endTime := time.Now()
-
+		endTime := time.Now() // as close as possible to send out time
 		d := endTime.Sub(currentTime)
 
 		sb.WriteString(endTime.Format("2006-01-02 15:04:05.000") + "................................END................................" + d.String())
