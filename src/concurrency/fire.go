@@ -1,6 +1,7 @@
 package concurrency
 
 import (
+	"fmt"
 	"runtime"
 	"sync"
 )
@@ -45,4 +46,10 @@ func Fire(gmp int) {
 	//signal.Notify(exitSignal, syscall.SIGINT, syscall.SIGTERM)
 	//
 	//<-exitSignal
+}
+
+func PrintNumbers(name string, i int) {
+	for ; i > 0; i-- {
+		fmt.Printf("%s %d\n", name, i)
+	}
 }
