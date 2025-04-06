@@ -3,3 +3,6 @@ server
 
 # env
 .env
+
+**/.DS_Store
+cmd/servers/multifact/handlers/.DS_Store
