@@ -18,6 +18,7 @@ require (
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.4
 	golang.org/x/net v0.34.0
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
