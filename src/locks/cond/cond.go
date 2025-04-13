@@ -1,58 +1,43 @@
 package cond
 
 import (
-	"fmt"
 	"log"
 	"sync"
 	"time"
 )
 
-func array(i int) (v []int) {
-	for i > 0 {
+func array(ii int) (v []int) {
+	for i := 0; i < ii; i++ {
 		v = append(v, i)
-		i -= 1
 	}
 	return
 }
 
 func F() {
-	S := array(11)
+	//S := array(11)
 	c := sync.NewCond(&sync.Mutex{})
 
-	ch := make(chan int)
-	for i := range 5 {
-		//c.L.Lock()
-		go func(i int) {
-			//defer c.L.Unlock()
-			for {
-				log.Printf("[%d ] wait on ch \n", i)
-				v := <-ch
-				//log.Printf("[%d] v %d recv. waiting\n", i, v)
-				c.Wait()
-				//log.Printf("[%d] v %d recv. await finished\n", i, v)
+	//ch := make(chan int)
 
-				log.Printf("[%d] Got value = %d from channel\n", i, v)
-			}
-		}(i)
-	}
-
-	for i, s := range S {
-		time.Sleep(200 * time.Millisecond)
-		_, _ = i, s
-
+	for i, v := range array(2) {
 		go func() {
+			log.Printf("locking %d %d \n", i, v)
 			c.L.Lock()
-
-			ch <- s
-			fmt.Printf("SIG[%d] \n", i)
-			c.Signal()
+			log.Printf("locked %d %d \n", i, v)
+			c.Wait()
+			log.Printf("after cond.signal received. unlocking.\n")
+			c.L.Unlock()
 		}()
-
-		//c.L.Unlock()
-		//c.Broadcast()
-		//c.Signal()
 	}
 
-	time.Sleep(time.Second * 1000)
+	time.Sleep(time.Second * 2)
+
+	for range 2 {
+		<-time.Tick(time.Second)
+		c.Signal()
+	}
+	time.Sleep(time.Second * 12)
+
+	log.Printf("exit")
 
 }
