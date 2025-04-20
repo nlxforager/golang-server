@@ -13,7 +13,7 @@ See [todos](docs/todos)
 
 ## local development 
 `go run ./cmd/client_demos/nats` - Demonstration of a durable message broker. \
-`go run ./cmd/client_demos/aws` - Using AWS S3 SDK. \ 
+`go run ./cmd/client_demos/aws` - Using AWS S3 SDK.
 
 - http servers: `go run cmd/servers/<pkg>` - 
   - Auth Server `cmd/servers/multifact`
