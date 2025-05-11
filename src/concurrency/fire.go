@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 )
 
 func Fire(gmp int) {
@@ -49,7 +50,10 @@ func Fire(gmp int) {
 }
 
 func PrintNumbers(name string, i int) {
+	a := atomic.Int32{}
+	a.Load()
 	for ; i > 0; i-- {
 		fmt.Printf("%s %d\n", name, i)
+		runtime.Gosched()
 	}
 }
