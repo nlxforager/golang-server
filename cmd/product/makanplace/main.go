@@ -24,6 +24,9 @@ func antiCsrfState() string {
 const COOKIE_NAME_GOOGLE_AUTHED_BEFORE = "loginoncebefore"
 
 func main() {
+	if err := Init(); err != nil {
+		log.Fatal(err)
+	}
 	eCh := make(chan os.Signal, 1)
 	signal.Notify(eCh, syscall.SIGTERM, syscall.SIGINT)
 
@@ -108,7 +111,6 @@ func main() {
 		w.Header().Set("Set-Cookie", COOKIE_NAME_GOOGLE_AUTHED_BEFORE+"=yes; path=/")
 		//w.Header().Set("Set-Cookie", COOKIE_NAME_GOOGLE_AUTHED_BEFORE+"=yes")
 		w.Write([]byte(fmt.Sprintf("%s", infoB)))
-
 	})
 
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
@@ -128,6 +130,10 @@ func main() {
 	log.Println("Received signal: " + recvSig.String() + " ; exiting...")
 }
 
-func init() {
-	InitConfig()
+func Init() (err error) {
+	err = InitConfig()
+	if err != nil {
+		return
+	}
+	return
 }
