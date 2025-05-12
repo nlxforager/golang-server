@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	auth "golang-server/cmd/servers/multifact/mux"
+	auth "golang-server/cmd/demos/servers/multifact/mux"
 )
 
 func TestHandler_Hello_AcceptJSON(t *testing.T) {

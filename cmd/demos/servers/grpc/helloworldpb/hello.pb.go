@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v6.30.2
-// source: cmd/servers/grpc/hello.proto
+// source: cmd/demos/servers/grpc/hello.proto
 
 package helloworldpb
 
@@ -113,7 +113,7 @@ var File_cmd_servers_grpc_hello_proto protoreflect.FileDescriptor
 
 const file_cmd_servers_grpc_hello_proto_rawDesc = "" +
 	"\n" +
-	"\x1ccmd/servers/grpc/hello.proto\x12\n" +
+	"\x1ccmd/demos/servers/grpc/hello.proto\x12\n" +
 	"helloworld\"\"\n" +
 	"\fHelloRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"&\n" +

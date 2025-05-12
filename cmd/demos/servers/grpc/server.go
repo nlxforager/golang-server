@@ -6,7 +6,7 @@ import (
 	"log"
 	"net"
 
-	"golang-server/cmd/servers/grpc/helloworldpb"
+	"golang-server/cmd/demos/servers/grpc/helloworldpb"
 	"google.golang.org/grpc"
 )
 

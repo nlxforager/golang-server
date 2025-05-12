@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"golang-server/cmd/servers/multifact/e2e_test/mocks"
+	"golang-server/cmd/demos/servers/multifact/e2e_test/mocks"
 	"golang-server/src/domain/auth"
 	"golang-server/src/domain/email"
 	"golang-server/src/log"

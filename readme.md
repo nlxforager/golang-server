@@ -15,10 +15,10 @@ See [todos](docs/todos)
 `go run ./cmd/client_demos/nats` - Demonstration of a durable message broker. \
 `go run ./cmd/client_demos/aws` - Using AWS S3 SDK.
 
-- http servers: `go run cmd/servers/<pkg>` - 
-  - Auth Server `cmd/servers/multifact`
-    - Swagger Docs @`cmd/servers/multifact/swagger`
-    - Test Coverage @ `cmd/servers/multifact/e2e_test`
+- http servers: `go run cmd/demos/servers/<pkg>` - 
+  - Auth Server `cmd/demos/servers/multifact`
+    - Swagger Docs @`cmd/demos/servers/multifact/swagger`
+    - Test Coverage @ `cmd/demos/servers/multifact/e2e_test`
 
 
 

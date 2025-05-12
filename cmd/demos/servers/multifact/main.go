@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"golang-server/cmd/servers/multifact/mux"
+	"golang-server/cmd/demos/servers/multifact/mux"
 	"golang-server/src/config"
 	gctx "golang-server/src/context"
 	"golang-server/src/domain/auth"

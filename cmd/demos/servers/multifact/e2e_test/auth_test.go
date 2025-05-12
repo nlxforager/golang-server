@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	emailservice "golang-server/cmd/servers/multifact/e2e_test/mocks/email"
+	emailservice "golang-server/cmd/demos/servers/multifact/e2e_test/mocks/email"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	authservice "golang-server/cmd/servers/multifact/e2e_test/mocks"
-	"golang-server/cmd/servers/multifact/mux"
+	authservice "golang-server/cmd/demos/servers/multifact/e2e_test/mocks"
+	"golang-server/cmd/demos/servers/multifact/mux"
 )
 
 // "2FA_PW_E"

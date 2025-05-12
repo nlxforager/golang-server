@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"reflect"
 
-	"golang-server/cmd/servers/multifact/handlers"
-	"golang-server/cmd/servers/multifact/mux/docs"
-	"golang-server/cmd/servers/multifact/mux/middlewares"
+	"golang-server/cmd/demos/servers/multifact/handlers"
+	"golang-server/cmd/demos/servers/multifact/mux/docs"
+	"golang-server/cmd/demos/servers/multifact/mux/middlewares"
 	"golang-server/src/domain/auth"
 	"golang-server/src/domain/email"
 

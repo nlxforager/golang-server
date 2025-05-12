@@ -5,4 +5,4 @@ server
 .env
 
 **/.DS_Store
-cmd/servers/multifact/handlers/.DS_Store
+cmd/demos/servers/multifact/handlers/.DS_Store

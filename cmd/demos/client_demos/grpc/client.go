@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"golang-server/cmd/servers/grpc/helloworldpb"
+	"golang-server/cmd/demos/servers/grpc/helloworldpb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
