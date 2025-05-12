@@ -5,18 +5,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/api/googleapi"
-	"google.golang.org/api/oauth2/v2"
-	"google.golang.org/api/option"
 	"io"
 	"log"
 	"net/http"
 	"time"
 
+	"golang-server/cmd/product/makanplace/config"
+
 	oauth "golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-
-	"golang-server/cmd/product/makanplace/config"
+	"google.golang.org/api/googleapi"
+	"google.golang.org/api/oauth2/v2"
+	"google.golang.org/api/option"
 )
 
 type Service struct {
@@ -27,7 +27,6 @@ type Service struct {
 }
 
 func (s *Service) Exchange(ctx context.Context, code string, opts ...oauth.AuthCodeOption) (*oauth.Token, error) {
-
 	return s.config.Exchange(ctx, code, opts...)
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -8,13 +9,15 @@ import (
 	"syscall"
 
 	"golang-server/cmd/product/makanplace/config"
+	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
+
 	goauthmux "golang-server/cmd/product/makanplace/mux/oauth_google"
 	goauthservice "golang-server/cmd/product/makanplace/service/oauth/google"
 )
 
 var Config config.Config
 
-const COOKIE_NAME_GOOGLE_AUTHED_BEFORE = "loginoncebefore"
+func makanTokenCookieKey() string { return "makantoken" }
 
 func main() {
 	if err := Init(); err != nil {
@@ -25,15 +28,22 @@ func main() {
 
 	goauthService := goauthservice.NewService(Config.GoogleAuthConfig)
 	mux := http.NewServeMux()
-	goauthmux.Register(mux, &goauthService)
+
+	mkUserSessionService := mkusersessionservice.New()
+	goauthmux.Register(mux, makanTokenCookieKey(), &goauthService, mkUserSessionService)
 
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		cookie, _ := r.Cookie(COOKIE_NAME_GOOGLE_AUTHED_BEFORE)
-		var cookieVal string
+		cookie, _ := r.Cookie(makanTokenCookieKey())
+		var sessionId string
 		if cookie != nil {
-			cookieVal = cookie.Value
+			sessionId = cookie.Value
 		}
-		w.Write([]byte("pong. the client browser has cookie. " + COOKIE_NAME_GOOGLE_AUTHED_BEFORE + "=" + cookieVal))
+
+		session := mkUserSessionService.GetSession(sessionId)
+
+		sessionB, _ := json.Marshal(session)
+
+		w.Write([]byte("pong. the client browser has cookie. " + makanTokenCookieKey() + "=" + string(sessionB)))
 	})
 
 	go func() {

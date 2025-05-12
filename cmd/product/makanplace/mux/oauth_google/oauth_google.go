@@ -3,52 +3,36 @@ package oauth_google
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	goauthservice "golang-server/cmd/product/makanplace/service/oauth/google"
-	"google.golang.org/api/oauth2/v2"
 	"log"
 	"net/http"
-	"sync"
+
+	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
+	goauthservice "golang-server/cmd/product/makanplace/service/oauth/google"
+
+	"google.golang.org/api/oauth2/v2"
 )
 
-type UserInfo struct {
-	Id                int64
-	GoogleCredentials []GoogleCredential
-}
-
-type GoogleCredential struct {
-	UserInfo *oauth2.Userinfo
-}
-
-type SessionMap struct {
-	m map[string]UserInfo
-	l sync.Mutex
-}
-
-var sessionMap SessionMap
-
-var userId int64
-
-func Register(mux *http.ServeMux, service *goauthservice.Service) {
+func Register(mux *http.ServeMux, makanTokenCookieKey string, goAuthService *goauthservice.Service, mkService *mkusersessionservice.Service) {
 	mux.HandleFunc("/auth/google/login", func(w http.ResponseWriter, r *http.Request) {
-		redirUrl := service.AuthCodeURL()
+		redirUrl := goAuthService.AuthCodeURL()
 		http.Redirect(w, r, redirUrl, http.StatusTemporaryRedirect)
 	})
 
 	// client will provide authCode and state.
-	// if we are able to obtain the service,
-	mux.HandleFunc(service.AuthCodeSuccessCallbackPath(), func(w http.ResponseWriter, r *http.Request) {
+	// if we are able to exchange a valid access token and use it to obtain user info, we will associate the google credential to a makanplace user.
+
+	log.Println(goAuthService.AuthCodeSuccessCallbackPath())
+	mux.HandleFunc(goAuthService.AuthCodeSuccessCallbackPath(), func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("panic: %v", r)
 			}
 		}()
-		log.Println(r.RequestURI)
 
 		authCode := r.URL.Query().Get("code")
 		state := r.URL.Query().Get("state")
 
-		userInfo, err := service.UserInfo(state, authCode)
+		userInfo, err := goAuthService.UserInfo(state, authCode)
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
 		}
@@ -58,19 +42,12 @@ func Register(mux *http.ServeMux, service *goauthservice.Service) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		sessionMap.l.Lock()
-		cookieVal := uuid.New().String()
-		userId++
-		sessionMap.m[cookieVal] = UserInfo{
-			Id: userId,
-			GoogleCredentials: []GoogleCredential{
-				{UserInfo: userInfo},
-			},
+		sessionId, err := mkService.CreateUserSession([]*oauth2.Userinfo{userInfo})
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
 		}
-		sessionMap.l.Unlock()
 
-		w.Header().Set("Set-Cookie", "makantoken"+"="+cookieVal+"; path=/")
+		w.Header().Set("Set-Cookie", makanTokenCookieKey+"="+sessionId+"; path=/")
 		w.Write([]byte(fmt.Sprintf("%s", infoB)))
 	})
 }

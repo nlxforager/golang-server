@@ -18,10 +18,10 @@ type GoogleAuthConfig struct {
 
 func gauth(port string) (GoogleAuthConfig, error) {
 	c := GoogleAuthConfig{
-		CLIENT_ID_PREFIX:                os.Getenv("CLIENT_ID_PREFIX"),
-		CLIENT_SECRET:                   os.Getenv("CLIENT_SECRET"),
-		AUTH_CODE_SUCCESS_CALLBACK_PATH: os.Getenv("AUTH_CODE_SUCCESS_CALLBACK_PATH"),
-		ENABLE_LOG_REQUEST:              os.Getenv("ENABLE_LOG_REQUEST") == "true",
+		CLIENT_ID_PREFIX:                os.Getenv("GOAUTH_CLIENT_ID_PREFIX"),
+		CLIENT_SECRET:                   os.Getenv("GOAUTH_CLIENT_SECRET"),
+		AUTH_CODE_SUCCESS_CALLBACK_PATH: os.Getenv("GOAUTH_AUTH_CODE_SUCCESS_CALLBACK_PATH"),
+		ENABLE_LOG_REQUEST:              os.Getenv("GOAUTH_ENABLE_LOG_REQUEST") == "true",
 		Port:                            port,
 	}
 
