@@ -47,7 +47,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, goAuthService *goa
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-		w.Header().Set("Set-Cookie", makanTokenCookieKey+"="+sessionId+"; path=/")
+		w.Header().Set("Set-Cookie", makanTokenCookieKey+"="+sessionId+"; path=/; HttpOnly")
 		w.Write([]byte(fmt.Sprintf("%s", infoB)))
 	})
 }
