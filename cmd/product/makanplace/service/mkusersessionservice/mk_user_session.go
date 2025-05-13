@@ -1,6 +1,7 @@
 package mkusersessionservice
 
 import (
+	"log"
 	"sync"
 
 	"google.golang.org/api/oauth2/v2"
@@ -40,7 +41,7 @@ func (s *Service) CreateUserSession(googleCredentials []*oauth2.Userinfo) (strin
 func (s *Service) GetSession(id string, hard bool) *UserInfo {
 	s.sessionMap.l.RLock()
 	defer s.sessionMap.l.RUnlock()
-
+	log.Printf("sessionId %s\n", id)
 	session, ok := s.sessionMap.m[id]
 	if !ok {
 		return nil
