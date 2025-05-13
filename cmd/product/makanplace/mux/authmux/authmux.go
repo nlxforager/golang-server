@@ -14,7 +14,7 @@ type Response struct {
 
 func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mkusersessionservice.Service, goauthloginurl string) {
 	// Revoke Session
-	mux.HandleFunc("/revoke_session", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /revoke_session", func(w http.ResponseWriter, r *http.Request) {
 		cookie, _ := r.Cookie(makanTokenCookieKey)
 		var sessionId string
 		if cookie != nil {

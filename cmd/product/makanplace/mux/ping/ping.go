@@ -2,6 +2,7 @@ package ping
 
 import (
 	"encoding/json"
+	"golang-server/cmd/product/makanplace/mux/middlewares"
 	"net/http"
 
 	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
@@ -30,7 +31,9 @@ func withCORS(next http.Handler) http.Handler {
 func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mkusersessionservice.Service, goauthloginurl string) {
 	// Checks current user state of the client
 	// Provides server configuration values
-	mux.Handle("/ping", withCORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	mws := middlewares.MiddewareStack{}.Wrap(withCORS)
+	mux.Handle("/ping", mws.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, _ := r.Cookie(makanTokenCookieKey)
 		var sessionId string
 		if cookie != nil {
