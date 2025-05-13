@@ -32,6 +32,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goa
 		userInfo, err := gOAuthService.UserInfo(state, authCode)
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
+			return
 		}
 		//infoB, err := json.Marshal(userInfo)
 		//if err != nil {
