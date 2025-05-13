@@ -12,8 +12,8 @@ import (
 	"google.golang.org/api/oauth2/v2"
 )
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goauthservice.Service, mkService *mkusersessionservice.Service) {
-	mux.HandleFunc("/auth/google/login", func(w http.ResponseWriter, r *http.Request) {
+func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goauthservice.Service, mkService *mkusersessionservice.Service, goauthloginurl string) {
+	mux.HandleFunc(goauthloginurl, func(w http.ResponseWriter, r *http.Request) {
 		redirUrl := gOAuthService.AuthCodeURL()
 		http.Redirect(w, r, redirUrl, http.StatusTemporaryRedirect)
 	})

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -9,6 +8,7 @@ import (
 	"syscall"
 
 	"golang-server/cmd/product/makanplace/config"
+	"golang-server/cmd/product/makanplace/mux/ping"
 	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
 
 	goauthmux "golang-server/cmd/product/makanplace/mux/oauth_google"
@@ -30,21 +30,11 @@ func main() {
 	mux := http.NewServeMux()
 
 	mkUserSessionService := mkusersessionservice.New()
-	goauthmux.Register(mux, makanTokenCookieKey(), &goauthService, mkUserSessionService)
+	makanTokenCookieKey := makanTokenCookieKey()
+	goauthloginurl := "/auth/google/login"
 
-	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		cookie, _ := r.Cookie(makanTokenCookieKey())
-		var sessionId string
-		if cookie != nil {
-			sessionId = cookie.Value
-		}
-
-		session := mkUserSessionService.GetSession(sessionId)
-
-		sessionB, _ := json.Marshal(session)
-
-		w.Write([]byte("pong. the client browser has cookie. " + makanTokenCookieKey() + "=" + string(sessionB)))
-	})
+	goauthmux.Register(mux, makanTokenCookieKey, &goauthService, mkUserSessionService, goauthloginurl)
+	ping.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl)
 
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)

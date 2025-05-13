@@ -9,8 +9,8 @@ import (
 )
 
 type UserInfo struct {
-	Id                int64
-	GoogleCredentials []*oauth2.Userinfo
+	Id                int64              `json:"Id"`
+	GoogleCredentials []*oauth2.Userinfo `json:"-"`
 }
 
 type SessionMap struct {
@@ -37,10 +37,18 @@ func (s *Service) CreateUserSession(googleCredentials []*oauth2.Userinfo) (strin
 	return sessionId, nil
 }
 
-func (s *Service) GetSession(id string) UserInfo {
+func (s *Service) GetSession(id string, hard bool) *UserInfo {
 	s.sessionMap.l.RLock()
 	defer s.sessionMap.l.RUnlock()
-	return s.sessionMap.m[id]
+
+	session, ok := s.sessionMap.m[id]
+	if !ok {
+		return nil
+	}
+	if hard {
+		session.GoogleCredentials = nil
+	}
+	return &session
 }
 
 func New() *Service {
