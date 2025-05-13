@@ -28,7 +28,7 @@ func main() {
 	signal.Notify(eCh, syscall.SIGTERM, syscall.SIGINT)
 
 	var googleOauthConfig = &oauth.Config{
-		RedirectURL:  "http://localhost" + LISTENING_PORT + AUTH_CODE_SUCCESS_CALLBACK_PATH,
+		RedirectURL:  "http://localhost:5173" + LISTENING_PORT + AUTH_CODE_SUCCESS_ENDPOINT_PATH,
 		ClientID:     CLIENT_ID_PREFIX + ".apps.googleusercontent.com",
 		ClientSecret: CLIENT_SECRET,
 		Scopes: []string{
@@ -53,7 +53,7 @@ func main() {
 		}
 	}
 
-	mux.HandleFunc(AUTH_CODE_SUCCESS_CALLBACK_PATH, func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(AUTH_CODE_SUCCESS_ENDPOINT_PATH, func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if r := recover(); r != nil {
 				log.Printf("panic: %v", r)

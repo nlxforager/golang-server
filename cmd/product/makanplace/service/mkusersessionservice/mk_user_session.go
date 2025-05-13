@@ -51,6 +51,14 @@ func (s *Service) GetSession(id string, hard bool) *UserInfo {
 	return &session
 }
 
+func (s *Service) RemoveSession(sessionId string) error {
+	s.sessionMap.l.Lock()
+	defer s.sessionMap.l.Unlock()
+	delete(s.sessionMap.m, sessionId)
+
+	return nil
+}
+
 func New() *Service {
 	return &Service{
 		sessionMap: SessionMap{

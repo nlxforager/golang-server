@@ -71,8 +71,12 @@ func (s *Service) UserInfo(state string, authCode string) (*oauth2.Userinfo, err
 	return userInfo, nil
 }
 
+func (s *Service) FrontEndHomePageURL() string {
+	return "http://localhost:5173"
+}
+
 func NewService(c config.GoogleAuthConfig) Service {
-	authCodeSuccessCallbackPath := c.AUTH_CODE_SUCCESS_CALLBACK_PATH // to be binded with mux and used during config.Exchange.
+	authCodeSuccessCallbackPath := c.AUTH_CODE_SUCCESS_ENDPOINT_PATH // to be binded with mux and used during config.Exchange.
 
 	var config = &oauth.Config{
 		RedirectURL:  "http://localhost" + c.Port + authCodeSuccessCallbackPath,
@@ -83,6 +87,8 @@ func NewService(c config.GoogleAuthConfig) Service {
 		},
 		Endpoint: google.Endpoint,
 	}
+
+	fmt.Printf("config %#v\n", config)
 
 	hc := http.DefaultClient
 	if c.ENABLE_LOG_REQUEST {

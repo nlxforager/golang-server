@@ -1,6 +1,7 @@
 package main
 
 import (
+	mkauthmux "golang-server/cmd/product/makanplace/mux/authmux"
 	"log"
 	"net/http"
 	"os"
@@ -35,6 +36,7 @@ func main() {
 
 	goauthmux.Register(mux, makanTokenCookieKey, &goauthService, mkUserSessionService, goauthloginurl)
 	ping.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl)
+	mkauthmux.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl)
 
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)

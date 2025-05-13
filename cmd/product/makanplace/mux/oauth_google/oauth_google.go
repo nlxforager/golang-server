@@ -1,8 +1,6 @@
 package oauth_google
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -35,12 +33,14 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goa
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
 		}
-		infoB, err := json.Marshal(userInfo)
-		if err != nil {
-			log.Printf("%#v\n", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		//infoB, err := json.Marshal(userInfo)
+		//if err != nil {
+		//	log.Printf("%#v\n", err)
+		//	w.WriteHeader(http.StatusInternalServerError)
+		//	return
+		//}
+		//w.Write([]byte(fmt.Sprintf("%s", infoB)))
+		//
 		sessionId, err := mkService.CreateUserSession([]*oauth2.Userinfo{userInfo})
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -48,6 +48,6 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goa
 		}
 
 		w.Header().Set("Set-Cookie", makanTokenCookieKey+"="+sessionId+"; path=/; HttpOnly")
-		w.Write([]byte(fmt.Sprintf("%s", infoB)))
+		http.Redirect(w, r, gOAuthService.FrontEndHomePageURL(), http.StatusTemporaryRedirect)
 	})
 }
