@@ -3,6 +3,7 @@ package ping
 import (
 	"net/http"
 
+	"golang-server/cmd/product/makanplace/mux/middlewares"
 	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
 )
 
@@ -12,9 +13,9 @@ type Response struct {
 	UserInfo *mkusersessionservice.UserInfo `json:"user_info"`
 }
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mkusersessionservice.Service, goauthloginurl string) {
+func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mkusersessionservice.Service, goauthloginurl string, middlewares middlewares.MiddewareStack) {
 	// Revoke Session
-	mux.HandleFunc("POST /revoke_session", func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("POST /revoke_session", middlewares.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, _ := r.Cookie(makanTokenCookieKey)
 		var sessionId string
 		if cookie != nil {
@@ -25,5 +26,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mkusers
 
 		resp.LoginUrls["google"] = goauthloginurl
 		_ = mkService.RemoveSession(sessionId)
-	})
+
+		w.Header().Set("Set-Cookie", makanTokenCookieKey+"=; path=/; HttpOnly")
+	})))
 }

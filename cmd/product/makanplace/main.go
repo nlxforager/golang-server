@@ -2,6 +2,7 @@ package main
 
 import (
 	mkauthmux "golang-server/cmd/product/makanplace/mux/authmux"
+	"golang-server/cmd/product/makanplace/mux/middlewares"
 	"log"
 	"net/http"
 	"os"
@@ -34,9 +35,11 @@ func main() {
 	makanTokenCookieKey := makanTokenCookieKey()
 	goauthloginurl := "/auth/google/login"
 
+	defaultMiddlewares := middlewares.MiddewareStack{}.Wrap(middlewares.WithCORS)
+
 	goauthmux.Register(mux, makanTokenCookieKey, &goauthService, mkUserSessionService, goauthloginurl)
-	ping.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl)
-	mkauthmux.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl)
+	ping.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl, defaultMiddlewares)
+	mkauthmux.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl, defaultMiddlewares)
 
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)
