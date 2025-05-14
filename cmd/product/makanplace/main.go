@@ -1,7 +1,7 @@
 package main
 
 import (
-	mkauthmux "golang-server/cmd/product/makanplace/mux/authmux"
+	mkauthmux "golang-server/cmd/product/makanplace/mux/auth"
 	"golang-server/cmd/product/makanplace/mux/middlewares"
 	"log"
 	"net/http"

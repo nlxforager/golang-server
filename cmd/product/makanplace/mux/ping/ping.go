@@ -2,9 +2,9 @@ package ping
 
 import (
 	"encoding/json"
-	"golang-server/cmd/product/makanplace/mux/middlewares"
 	"net/http"
 
+	"golang-server/cmd/product/makanplace/mux/middlewares"
 	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
 )
 

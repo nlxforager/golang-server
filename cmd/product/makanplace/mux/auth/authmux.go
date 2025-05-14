@@ -1,4 +1,4 @@
-package ping
+package auth
 
 import (
 	"net/http"
