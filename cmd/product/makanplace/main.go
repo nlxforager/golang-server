@@ -1,8 +1,6 @@
 package main
 
 import (
-	mkauthmux "golang-server/cmd/product/makanplace/mux/auth"
-	"golang-server/cmd/product/makanplace/mux/middlewares"
 	"log"
 	"net/http"
 	"os"
@@ -10,10 +8,11 @@ import (
 	"syscall"
 
 	"golang-server/cmd/product/makanplace/config"
-	"golang-server/cmd/product/makanplace/mux/ping"
+	"golang-server/cmd/product/makanplace/controller/middlewares"
+	mkauthmux "golang-server/cmd/product/makanplace/controller/mux/auth"
+	goauthmux "golang-server/cmd/product/makanplace/controller/mux/oauth_google"
+	"golang-server/cmd/product/makanplace/controller/mux/ping"
 	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
-
-	goauthmux "golang-server/cmd/product/makanplace/mux/oauth_google"
 	goauthservice "golang-server/cmd/product/makanplace/service/oauth/google"
 )
 

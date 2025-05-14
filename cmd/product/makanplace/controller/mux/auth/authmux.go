@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"golang-server/cmd/product/makanplace/mux/middlewares"
+	"golang-server/cmd/product/makanplace/controller/middlewares"
 	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
 )
 
