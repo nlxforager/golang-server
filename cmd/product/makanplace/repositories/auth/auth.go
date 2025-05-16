@@ -23,8 +23,15 @@ type UserWithGmail struct {
 	Gmails []string `db:"gmails"`
 }
 
-// GetOrCreateUserByGmail guarantees a valid user on success
 func (r Repo) GetOrCreateUserByGmail(emails []string) (*UserWithGmail, error) {
+	return r.getOrCreateUserByGmail(emails, 0)
+}
+
+// GetOrCreateUserByGmail guarantees a valid user on success
+func (r Repo) getOrCreateUserByGmail(emails []string, recursed int) (*UserWithGmail, error) {
+	if recursed > 1 {
+		return nil, errors.New("getOrCreateUserByGmail: too many recursion")
+	}
 	if len(emails) == 0 {
 		return nil, errors.New("no emails provided")
 	}
@@ -35,7 +42,7 @@ func (r Repo) GetOrCreateUserByGmail(emails []string) (*UserWithGmail, error) {
 	row := r.conn.QueryRow(context.Background(), "with gmails1 as (select user_id, gmail from gmails where gmail = $1) select u.id id, array_agg(g.gmail) gmails from users u inner join gmails1 g on u.id = g.user_id group by u.id", email)
 
 	var user UserWithGmail
-	err := row.Scan(&user)
+	err := row.Scan(&user.Id, &user.Gmails)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		log.Println("[GetOrCreateUserByGmail] gmails is not associated...")
@@ -47,7 +54,8 @@ func (r Repo) GetOrCreateUserByGmail(emails []string) (*UserWithGmail, error) {
 		if err := r.AssociateGmail(newUser.Id, email); err != nil {
 			return nil, err
 		}
-		return &user, nil
+
+		return r.getOrCreateUserByGmail(emails, recursed+1)
 	} else if err != nil {
 		log.Printf("[GetOrCreateUserByGmail] general error %#v", err)
 		return nil, err

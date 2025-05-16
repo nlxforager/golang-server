@@ -21,7 +21,6 @@ type SessionMap struct {
 
 type Service struct {
 	sessionMap SessionMap
-	nextUserId int64
 	authRepo   *auth.Repo
 }
 
@@ -34,7 +33,7 @@ func ToEmails(a []*oauth2.Userinfo) (b []string) {
 
 func (s *Service) CreateUserSession(googleCredentials []*oauth2.Userinfo) (string, error) {
 	s.sessionMap.l.Lock()
-
+	defer s.sessionMap.l.Unlock()
 	emails := ToEmails(googleCredentials)
 	user, err := s.authRepo.GetOrCreateUserByGmail(emails)
 	if err != nil {
@@ -44,9 +43,6 @@ func (s *Service) CreateUserSession(googleCredentials []*oauth2.Userinfo) (strin
 	sessionId := uuid.New().String()
 
 	s.sessionMap.m[sessionId] = user
-
-	s.nextUserId++
-	s.sessionMap.l.Unlock()
 
 	return sessionId, nil
 }
