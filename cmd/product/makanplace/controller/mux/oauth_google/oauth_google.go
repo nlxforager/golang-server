@@ -29,21 +29,14 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goa
 		authCode := r.URL.Query().Get("code")
 		state := r.URL.Query().Get("state")
 
-		userInfo, err := gOAuthService.UserInfo(state, authCode)
+		gmailUserInfo, err := gOAuthService.UserInfo(state, authCode)
 		if err != nil {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		//infoB, err := json.Marshal(userInfo)
-		//if err != nil {
-		//	log.Printf("%#v\n", err)
-		//	w.WriteHeader(http.StatusInternalServerError)
-		//	return
-		//}
-		//w.Write([]byte(fmt.Sprintf("%s", infoB)))
-		//
-		sessionId, err := mkService.CreateUserSession([]*oauth2.Userinfo{userInfo})
+		sessionId, err := mkService.CreateUserSession([]*oauth2.Userinfo{gmailUserInfo})
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

@@ -1,9 +1,9 @@
 package mkusersessionservice
 
 import (
-	"log"
 	"sync"
 
+	"golang-server/cmd/product/makanplace/repositories/auth"
 	"google.golang.org/api/oauth2/v2"
 
 	"github.com/google/uuid"
@@ -15,22 +15,35 @@ type UserInfo struct {
 }
 
 type SessionMap struct {
-	m map[string]UserInfo
+	m map[string]*auth.UserWithGmail
 	l sync.RWMutex
 }
 
 type Service struct {
 	sessionMap SessionMap
 	nextUserId int64
+	authRepo   *auth.Repo
+}
+
+func ToEmails(a []*oauth2.Userinfo) (b []string) {
+	for _, v := range a {
+		b = append(b, v.Email)
+	}
+	return
 }
 
 func (s *Service) CreateUserSession(googleCredentials []*oauth2.Userinfo) (string, error) {
 	s.sessionMap.l.Lock()
-	sessionId := uuid.New().String()
-	s.sessionMap.m[sessionId] = UserInfo{
-		Id:                s.nextUserId,
-		GoogleCredentials: googleCredentials,
+
+	emails := ToEmails(googleCredentials)
+	user, err := s.authRepo.GetOrCreateUserByGmail(emails)
+	if err != nil {
+		return "", err
 	}
+
+	sessionId := uuid.New().String()
+
+	s.sessionMap.m[sessionId] = user
 
 	s.nextUserId++
 	s.sessionMap.l.Unlock()
@@ -38,18 +51,18 @@ func (s *Service) CreateUserSession(googleCredentials []*oauth2.Userinfo) (strin
 	return sessionId, nil
 }
 
-func (s *Service) GetSession(id string, hard bool) *UserInfo {
+// GetSession if hardened, dont return confidential values
+func (s *Service) GetSession(id string, hard bool) *auth.UserWithGmail {
 	s.sessionMap.l.RLock()
 	defer s.sessionMap.l.RUnlock()
-	log.Printf("sessionId %s\n", id)
 	session, ok := s.sessionMap.m[id]
 	if !ok {
 		return nil
 	}
 	if hard {
-		session.GoogleCredentials = nil
+		session.Gmails = nil
 	}
-	return &session
+	return session
 }
 
 func (s *Service) RemoveSession(sessionId string) error {
@@ -60,12 +73,12 @@ func (s *Service) RemoveSession(sessionId string) error {
 	return nil
 }
 
-func New() *Service {
+func New(authRepo *auth.Repo) *Service {
 	return &Service{
 		sessionMap: SessionMap{
-			m: make(map[string]UserInfo),
+			m: make(map[string]*auth.UserWithGmail),
 			l: sync.RWMutex{},
 		},
-		nextUserId: 0,
+		authRepo: authRepo,
 	}
 }

@@ -31,6 +31,7 @@ func (s *Service) Exchange(ctx context.Context, code string, opts ...oauth.AuthC
 }
 
 func (s *Service) AuthCodeURL() string {
+	return s.config.AuthCodeURL(s.antiCsrfState(), oauth.SetAuthURLParam("prompt", ""))
 	return s.config.AuthCodeURL(s.antiCsrfState(), oauth.SetAuthURLParam("prompt", "consent select_account"))
 }
 

@@ -6,12 +6,14 @@ import (
 
 	"golang-server/cmd/product/makanplace/controller/middlewares"
 	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
+
+	"golang-server/cmd/product/makanplace/repositories/auth"
 )
 
 type Response struct {
 	LoginUrls map[string]string `json:"login_urls"`
 
-	UserInfo *mkusersessionservice.UserInfo `json:"user_info"`
+	UserInfo *auth.UserWithGmail `json:"user_info"`
 }
 
 func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mkusersessionservice.Service, goauthloginurl string, mws middlewares.MiddewareStack) {
