@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	log2 "golang-server/cmd/product/makanplace/log"
+
 	"log"
 	"net/http"
 	"os"
@@ -12,15 +12,19 @@ import (
 
 	"golang-server/cmd/product/makanplace/config"
 	"golang-server/cmd/product/makanplace/controller/middlewares"
+	mklog "golang-server/cmd/product/makanplace/log"
 
 	authrepo "golang-server/cmd/product/makanplace/repositories/auth"
+	outletrepo "golang-server/cmd/product/makanplace/repositories/outlet"
 
 	goauthmux "golang-server/cmd/product/makanplace/controller/mux/oauth_google"
+	outletmux "golang-server/cmd/product/makanplace/controller/mux/outlets"
 	"golang-server/cmd/product/makanplace/controller/mux/ping"
 	mksessionmux "golang-server/cmd/product/makanplace/controller/mux/session"
-	stallmux "golang-server/cmd/product/makanplace/controller/mux/stalls"
-	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
+	
+	"golang-server/cmd/product/makanplace/service/mk_user_session"
 	goauthservice "golang-server/cmd/product/makanplace/service/oauth/google"
+	"golang-server/cmd/product/makanplace/service/mk_outlet"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
@@ -42,46 +46,39 @@ func main() {
 	goauthService := goauthservice.NewService(Config.GoogleAuthConfig)
 	mux := http.NewServeMux()
 	mkAuthRepository := authrepo.New(DbConnPool)
-	mkUserSessionService := mkusersessionservice.New(mkAuthRepository)
+	mkUserSessionService := mk_user_session.New(mkAuthRepository, Config.AdminConfig)
 	makanTokenCookieKey := makanTokenCookieKey()
 
 	// controller
 	goauthloginurl := "/auth/google/login"
-	//defaultMiddlewares := middlewares.MiddewareStack{}.Wrap(middlewares.WithCORS)
-	defaultMiddlewares := middlewares.MiddewareStack{}
-	defaultMiddlewares = defaultMiddlewares.Wrap(func(handler http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("[next middleware 1] %s %s %s", r.Method, r.URL.Path, r.RemoteAddr)
-			handler.ServeHTTP(w, r)
-		})
-	})
 
-	defaultMiddlewares = defaultMiddlewares.Wrap(func(handler http.Handler) http.Handler {
+	defaultMiddlewares := middlewares.MiddewareStack{}
+
+	//
+	authMiddleware := defaultMiddlewares.Wrap(func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("[next middleware 2] %s %s %s", r.Method, r.URL.Path, r.RemoteAddr)
+			log.Printf("%s %s middleware:auth %s \n", r.Method, r.URL.Path, mklog.HttpRequestPrefix(r.Context()))
+			cookie, _ := r.Cookie(makanTokenCookieKey)
+			session := mkUserSessionService.GetSession(cookie.Value, true)
+			if session == nil {
+				log.Printf("%s %s middleware:auth %s session not found", r.Method, r.URL.Path, mklog.HttpRequestPrefix(r.Context()))
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+
+			log.Printf("session found %#v\n", session)
 			handler.ServeHTTP(w, r)
 		})
 	})
-	//
-	//authMiddleware := defaultMiddlewares.Wrap(func(handler http.Handler) http.Handler {
-	//	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	//		log.Printf("%s %s middleware:auth", r.Method, r.URL.Path)
-	//		cookie, _ := r.Cookie(makanTokenCookieKey)
-	//		session := mkUserSessionService.GetSession(cookie.Value, true)
-	//		if session == nil {
-	//			w.WriteHeader(http.StatusUnauthorized)
-	//			return
-	//		}
-	//
-	//		log.Printf("session found %#v\n", session)
-	//		handler.ServeHTTP(w, r)
-	//	})
-	//})
 
 	goauthmux.Register(mux, makanTokenCookieKey, &goauthService, mkUserSessionService, goauthloginurl)
 	ping.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl, defaultMiddlewares)
 	mksessionmux.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl, defaultMiddlewares)
-	stallmux.Register(mux, makanTokenCookieKey, mkUserSessionService, defaultMiddlewares)
+
+	outletRepo := outletrepo.New(DbConnPool)
+	outletService := mk_outlet_service.NewOutletService(outletRepo)
+
+	outletmux.Register(mux, makanTokenCookieKey, mkUserSessionService, authMiddleware, outletService)
 
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)
@@ -90,7 +87,7 @@ func main() {
 			ctx = context.WithValue(ctx, "URL", r.URL.String())
 			ctx = context.WithValue(ctx, "ORIGIN", r.Header.Get("Origin"))
 			r = r.WithContext(ctx)
-			log.Printf("%s [middleware 0]\n", log2.HttpRequestPrefix(r.Context()))
+			log.Printf("%s [middleware 0]\n", mklog.HttpRequestPrefix(r.Context()))
 
 			c := cors.New(cors.Options{
 				AllowedOrigins:   []string{"http://localhost:5173"},

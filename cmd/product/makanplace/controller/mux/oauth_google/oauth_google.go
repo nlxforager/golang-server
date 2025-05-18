@@ -4,13 +4,13 @@ import (
 	"log"
 	"net/http"
 
-	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
+	"golang-server/cmd/product/makanplace/service/mk_user_session"
 	goauthservice "golang-server/cmd/product/makanplace/service/oauth/google"
 
 	"google.golang.org/api/oauth2/v2"
 )
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goauthservice.Service, mkService *mkusersessionservice.Service, goauthloginurl string) {
+func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goauthservice.Service, mkService *mk_user_session.Service, goauthloginurl string) {
 	mux.HandleFunc(goauthloginurl, func(w http.ResponseWriter, r *http.Request) {
 		redirUrl := gOAuthService.AuthCodeURL()
 		http.Redirect(w, r, redirUrl, http.StatusTemporaryRedirect)

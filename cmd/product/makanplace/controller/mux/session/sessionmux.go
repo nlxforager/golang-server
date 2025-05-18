@@ -4,16 +4,16 @@ import (
 	"net/http"
 
 	"golang-server/cmd/product/makanplace/controller/middlewares"
-	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
+	"golang-server/cmd/product/makanplace/service/mk_user_session"
 )
 
 type Response struct {
 	LoginUrls map[string]string `json:"login_urls"`
 
-	UserInfo *mkusersessionservice.UserInfo `json:"user_info"`
+	UserInfo *mk_user_session.UserInfo `json:"user_info"`
 }
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mkusersessionservice.Service, goauthloginurl string, middlewares middlewares.MiddewareStack) {
+func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user_session.Service, goauthloginurl string, middlewares middlewares.MiddewareStack) {
 	// Revoke Session
 	mux.Handle("POST /revoke_session", middlewares.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, _ := r.Cookie(makanTokenCookieKey)

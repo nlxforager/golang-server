@@ -23,12 +23,12 @@ type UserWithGmail struct {
 	Gmails []string `db:"gmails"`
 }
 
-func (r Repo) GetOrCreateUserByGmail(emails []string) (*UserWithGmail, error) {
+func (r *Repo) GetOrCreateUserByGmail(emails []string) (*UserWithGmail, error) {
 	return r.getOrCreateUserByGmail(emails, 0)
 }
 
 // GetOrCreateUserByGmail guarantees a valid user on success
-func (r Repo) getOrCreateUserByGmail(emails []string, recursed int) (*UserWithGmail, error) {
+func (r *Repo) getOrCreateUserByGmail(emails []string, recursed int) (*UserWithGmail, error) {
 	if recursed > 1 {
 		return nil, errors.New("getOrCreateUserByGmail: too many recursion")
 	}
@@ -45,7 +45,7 @@ func (r Repo) getOrCreateUserByGmail(emails []string, recursed int) (*UserWithGm
 	err := row.Scan(&user.Id, &user.Gmails)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		log.Println("[GetOrCreateUserByGmail] gmails is not associated...")
+		log.Println("[GetOrCreateUserByGmail] gmails is not associated to any user...")
 		newUser, err := r.CreateUser()
 		if err != nil {
 			return nil, err
@@ -57,13 +57,15 @@ func (r Repo) getOrCreateUserByGmail(emails []string, recursed int) (*UserWithGm
 
 		return r.getOrCreateUserByGmail(emails, recursed+1)
 	} else if err != nil {
-		log.Printf("[GetOrCreateUserByGmail] general error %#v", err)
+		log.Printf("[GetOrCreateUserByGmail] general error %#v\n", err)
 		return nil, err
 	}
+
+	log.Printf("[GetOrCreateUserByGmail] %#v\n", user)
 	return &user, nil
 }
 
-func (r Repo) CreateUser() (*BaseUser, error) {
+func (r *Repo) CreateUser() (*BaseUser, error) {
 	var user BaseUser
 	row := r.conn.QueryRow(context.Background(), "insert into users DEFAULT VALUES RETURNING id, created_at;")
 	err := row.Scan(&user.Id, &user.CreatedAt)
@@ -75,7 +77,7 @@ func (r Repo) CreateUser() (*BaseUser, error) {
 	return &user, nil
 }
 
-func (r Repo) AssociateGmail(userId int64, gmail string) error {
+func (r *Repo) AssociateGmail(userId int64, gmail string) error {
 	_, err := r.conn.Exec(context.Background(), "insert into gmails(user_id, gmail) values (@user_id, @gmail) RETURNING *;", pgx.NamedArgs{
 		"user_id": userId,
 		"gmail":   gmail,

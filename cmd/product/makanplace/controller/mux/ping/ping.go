@@ -5,18 +5,23 @@ import (
 	"net/http"
 
 	"golang-server/cmd/product/makanplace/controller/middlewares"
-	"golang-server/cmd/product/makanplace/service/mkusersessionservice"
+	"golang-server/cmd/product/makanplace/service/mk_user_session"
 
 	"golang-server/cmd/product/makanplace/repositories/auth"
 )
 
+type OutletForm struct {
+	ProductName []string `json:"product_names"`
+}
 type Response struct {
 	LoginUrls map[string]string `json:"login_urls"`
 
 	UserInfo *auth.UserWithGmail `json:"user_info"`
+
+	OutletForm `json:"outlet_form"`
 }
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mkusersessionservice.Service, goauthloginurl string, mws middlewares.MiddewareStack) {
+func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user_session.Service, goauthloginurl string, mws middlewares.MiddewareStack) {
 	// Checks current user state of the client
 	// Provides server configuration values
 
@@ -34,6 +39,9 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mkusers
 		session := mkService.GetSession(sessionId, true)
 		resp.UserInfo = session
 
+		resp.OutletForm = OutletForm{
+			ProductName: []string{"Fried Hokkien Mee"},
+		}
 		respB, _ := json.Marshal(resp)
 		w.Write(respB)
 	})))
