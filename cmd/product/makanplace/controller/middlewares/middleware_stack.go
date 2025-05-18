@@ -15,8 +15,8 @@ func (ms MiddewareStack) Wrap(next func(handler http.Handler) http.Handler) Midd
 }
 
 func (ms MiddewareStack) Finalize(final http.Handler) http.Handler {
-	for _, m := range ms.h {
-		final = m(final)
+	for i := range ms.h {
+		final = ms.h[len(ms.h)-1-i](final)
 	}
 	return final
 }

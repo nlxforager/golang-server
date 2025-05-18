@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -15,10 +16,19 @@ type DatabaseConfig struct {
 	ConnString string
 }
 
+type SuperUser struct {
+	Gmails []string
+}
+
+type AdminConfig struct {
+	SuperUser
+}
+
 type Config struct {
 	DatabaseConfig
 	GoogleAuthConfig
 	ServerConfig
+	AdminConfig
 }
 
 func InitConfig() (c Config, e error) {
@@ -40,5 +50,7 @@ func InitConfig() (c Config, e error) {
 
 	// server
 
+	superUserGmails := os.Getenv("SUPER_USER_GMAIL")
+	c.SuperUser.Gmails = strings.Split(superUserGmails, ",")
 	return c, nil
 }
