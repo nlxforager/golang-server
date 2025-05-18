@@ -93,7 +93,8 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 			response_types.ErrorNoBody(w, http.StatusBadRequest, err)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
+
+		response_types.OkEmptyJsonBody(w)
 	})))
 
 	mux.Handle("GET /outlet/", middlewares.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

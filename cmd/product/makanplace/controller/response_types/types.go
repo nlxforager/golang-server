@@ -26,3 +26,9 @@ func Error[T any](w http.ResponseWriter, httpCode int, err error, body T) {
 func ErrorNoBody(w http.ResponseWriter, httpCode int, err error) {
 	Error[any](w, httpCode, err, nil)
 }
+
+func OkEmptyJsonBody(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte("{}"))
+}
