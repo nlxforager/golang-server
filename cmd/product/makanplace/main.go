@@ -21,10 +21,10 @@ import (
 	outletmux "golang-server/cmd/product/makanplace/controller/mux/outlets"
 	"golang-server/cmd/product/makanplace/controller/mux/ping"
 	mksessionmux "golang-server/cmd/product/makanplace/controller/mux/session"
-	
+
+	"golang-server/cmd/product/makanplace/service/mk_outlet"
 	"golang-server/cmd/product/makanplace/service/mk_user_session"
 	goauthservice "golang-server/cmd/product/makanplace/service/oauth/google"
-	"golang-server/cmd/product/makanplace/service/mk_outlet"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
@@ -90,7 +90,7 @@ func main() {
 			log.Printf("%s [middleware 0]\n", mklog.HttpRequestPrefix(r.Context()))
 
 			c := cors.New(cors.Options{
-				AllowedOrigins:   []string{"http://localhost:5173"},
+				AllowedOrigins:   append(Config.ServerConfig.Cors.AllowedOrigins, "http://localhost:5173"),
 				AllowCredentials: true,
 				AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 				AllowedHeaders:   []string{makanTokenCookieKey, "Accept", "Authorization", "Content-Type", "X-Requested-With"},
