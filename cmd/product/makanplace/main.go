@@ -80,6 +80,15 @@ func main() {
 
 	outletmux.Register(mux, makanTokenCookieKey, mkUserSessionService, authMiddleware, outletService)
 
+	c := cors.New(cors.Options{
+		AllowedOrigins:   append(Config.ServerConfig.Cors.AllowedOrigins, "http://localhost:5173"),
+		AllowCredentials: true,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowedHeaders:   []string{makanTokenCookieKey, "Accept", "Authorization", "Content-Type", "X-Requested-With"},
+		// Enable Debugging for testing, consider disabling in production
+		Debug: true,
+	}).Handler(mux)
+
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)
 		http.ListenAndServe(Config.ServerConfig.Port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -89,16 +98,8 @@ func main() {
 			r = r.WithContext(ctx)
 			log.Printf("%s [middleware 0]\n", mklog.HttpRequestPrefix(r.Context()))
 
-			c := cors.New(cors.Options{
-				AllowedOrigins:   append(Config.ServerConfig.Cors.AllowedOrigins, "http://localhost:5173"),
-				AllowCredentials: true,
-				AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-				AllowedHeaders:   []string{makanTokenCookieKey, "Accept", "Authorization", "Content-Type", "X-Requested-With"},
-				// Enable Debugging for testing, consider disabling in production
-				Debug: true,
-			}).Handler(mux)
-
 			c.ServeHTTP(w, r)
+
 		}))
 	}()
 	recvSig := <-eCh

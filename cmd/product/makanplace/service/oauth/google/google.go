@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 
 	"golang-server/cmd/product/makanplace/config"
@@ -49,6 +50,17 @@ var ErrExchangeTokenFailed = errors.New("exchange token failed")
 func (s *Service) UserInfo(state string, authCode string) (*oauth2.Userinfo, error) {
 	if state != s.antiCsrfState() {
 		return nil, ErrStateMismatch
+	}
+
+	{
+
+		c := http.Client{}
+		res, rErr := c.Do(&http.Request{
+			Method: "GET",
+			URL:    &url.URL{Scheme: "https", Host: "www.googleapis.com", Path: "/"},
+		})
+
+		log.Printf("[trying to get] want %d got %s err %#v\n", 404, res.Status, rErr)
 	}
 
 	token, err := s.Exchange(context.Background(), authCode)
