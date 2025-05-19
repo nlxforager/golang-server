@@ -21,12 +21,6 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goa
 	// if we are able to exchange a valid access token and use it to obtain user info, we will associate the google credential to a makanplace user.
 
 	mux.HandleFunc(gOAuthService.AuthCodeSuccessCallbackPath(), func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Printf("panic: %v", r)
-			}
-		}()
-
 		authCode := r.URL.Query().Get("code")
 		state := r.URL.Query().Get("state")
 
