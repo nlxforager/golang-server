@@ -9,6 +9,6 @@ RUN go build -v -o /run-app ./cmd/product/makanplace/main.go
 
 
 FROM debian:bookworm
-RUN apk add --no-cache ca-certificates
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 COPY --from=builder /run-app /usr/local/bin/
 CMD ["run-app"]
