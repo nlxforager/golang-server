@@ -34,7 +34,7 @@ type Config struct {
 func InitConfig() (c Config, e error) {
 
 	err := godotenv.Load()
-	if os.Getenv("OPTIONAL_LOAD_ENV_FILE") == "TRUE" && err != nil {
+	if !(os.Getenv("OPTIONAL_LOAD_ENV_FILE") == "TRUE") && err != nil {
 		return Config{}, fmt.Errorf("error loading .env file\n")
 	}
 	c.ServerConfig.Port = os.Getenv("LISTENING_PORT")
