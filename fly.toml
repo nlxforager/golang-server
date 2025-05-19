@@ -9,6 +9,7 @@ primary_region = 'syd'
 [build]
   [build.args]
     GO_VERSION = '1.23.3'
+  dockerfile = "Dockerfile"
 
 [env]
   PORT = '8080'

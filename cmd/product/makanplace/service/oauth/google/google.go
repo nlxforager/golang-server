@@ -63,7 +63,7 @@ func (s *Service) UserInfo(state string, authCode string) (*oauth2.Userinfo, err
 		if rErr == nil {
 			log.Printf("[trying to get] want %d got %s \n", 404, res.Status)
 		} else {
-			log.Printf("[trying to get] err %#v\n", rErr)
+			log.Printf("[trying to get] err %s\n", rErr)
 		}
 
 	}
