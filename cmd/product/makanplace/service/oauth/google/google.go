@@ -80,7 +80,7 @@ func NewService(c config.GoogleAuthConfig) Service {
 	authCodeSuccessCallbackPath := c.AUTH_CODE_SUCCESS_ENDPOINT_PATH // to be binded with mux and used during config.Exchange.
 
 	var config = &oauth.Config{
-		RedirectURL:  "http://localhost" + c.Port + authCodeSuccessCallbackPath,
+		RedirectURL:  c.AUTH_CODE_SUCCESS_ENDPOINT_HOST + authCodeSuccessCallbackPath,
 		ClientID:     c.CLIENT_ID_PREFIX + ".apps.googleusercontent.com",
 		ClientSecret: c.CLIENT_SECRET,
 		Scopes: []string{

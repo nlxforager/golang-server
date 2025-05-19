@@ -11,9 +11,9 @@ var GOAUTH_ENABLE_LOG_REQUEST = false
 type GoogleAuthConfig struct {
 	CLIENT_ID_PREFIX                string
 	CLIENT_SECRET                   string
-	AUTH_CODE_SUCCESS_ENDPOINT_PATH string
 	ENABLE_LOG_REQUEST              bool
-	Port                            string
+	Port                            string // :8080
+	AUTH_CODE_SUCCESS_ENDPOINT_PATH string
 	AUTH_CODE_SUCCESS_ENDPOINT_HOST string
 }
 
