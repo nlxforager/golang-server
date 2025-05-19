@@ -67,19 +67,8 @@ func (r *Repo) NewMenuItem(txa pgx.Tx, name string) (id int64, err error) {
 
 func (r *Repo) NewStallMenuItem(txa pgx.Tx, menuItemId int64, outletId int64) (id int64, err error) {
 	if txa == nil {
-		txa, err = r.conn.Begin(context.Background())
-		if err != nil {
-			return 0, err
-		}
+		return 0, fmt.Errorf("tx is nil")
 	}
-
-	defer func() {
-		if err != nil {
-			txa.Rollback(context.Background())
-		} else {
-			txa.Commit(context.Background())
-		}
-	}()
 
 	row := txa.QueryRow(context.Background(), "insert into outlet_menu(outlet_id, menu_item_id) values ($1,$2) returning id;", outletId, menuItemId)
 
@@ -90,7 +79,7 @@ func (r *Repo) NewStallMenuItem(txa pgx.Tx, menuItemId int64, outletId int64) (i
 	return id, nil
 }
 
-func (r *Repo) NewOutletWithMenu(outletName string, address string, postal string, officialLinks []string, menuItems []string) (err error) {
+func (r *Repo) NewOutletWithMenu(outletName string, address string, postal string, officialLinks []string, reviewLinks []string, menuItems []string) (err error) {
 	tx, err := r.conn.Begin(context.Background())
 	if err != nil {
 		return err
@@ -107,24 +96,79 @@ func (r *Repo) NewOutletWithMenu(outletName string, address string, postal strin
 		return err
 	}
 
-	if len(menuItems) > 1 {
-		return fmt.Errorf("outlet %s has more than one menu item. server not implemented", outletName)
-	}
-	if len(menuItems) == 0 {
-		return fmt.Errorf("outlet %s has no item server", outletName)
+	{
+		if len(menuItems) > 1 {
+			return fmt.Errorf("outlet %s has more than one menu item. server not implemented", outletName)
+		}
+		if len(menuItems) == 0 {
+			return fmt.Errorf("outlet %s has no item server", outletName)
+		}
+
+		itemId, err := r.NewMenuItem(tx, menuItems[0])
+		if err != nil {
+			return err
+		}
+
+		_, err = r.NewStallMenuItem(tx, itemId, outletId)
+		if err != nil {
+			return err
+		}
 	}
 
-	itemId, err := r.NewMenuItem(tx, menuItems[0])
-	if err != nil {
-		return err
-	}
-
-	_, err = r.NewStallMenuItem(tx, itemId, outletId)
+	err = r.addReviewLinks(tx, outletId, reviewLinks)
 	if err != nil {
 		return err
 	}
 
 	tx.Commit(context.Background())
+	return nil
+}
+
+type Outlet struct {
+	LatLong       []string
+	Name          string
+	Address       string
+	PostalCode    string
+	OfficialLinks []string
+	ReviewLinks   []string
+}
+
+func (r *Repo) GetOutlets() ([]Outlet, error) {
+	rows, err := r.conn.Query(context.Background(), "select name, address, postal_code, official_links, latlong, array_agg(owr.link) from outlet inner join public.outlet_web_reviews owr on outlet.id = owr.outlet_id group by outlet.id;")
+	if err != nil {
+		return nil, err
+	}
+	var outlets []Outlet
+	for rows.Next() {
+
+		var o Outlet
+
+		rows.Scan(&o.Name, &o.Address, &o.PostalCode, &o.OfficialLinks, &o.LatLong, &o.ReviewLinks)
+		outlets = append(outlets, o)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return outlets, nil
+}
+
+func (r *Repo) SetLatLong(postal string, latitude string, longitude string) error {
+	_, err := r.conn.Exec(context.Background(), "update outlet set latlong=$1 where postal_code=$2", []string{latitude, longitude}, postal)
+	return err
+}
+
+func (r *Repo) addReviewLinks(tx pgx.Tx, outletId int64, links []string) error {
+	if tx == nil {
+		return fmt.Errorf("tx is nil")
+	}
+
+	_, err := tx.CopyFrom(context.Background(), pgx.Identifier{"outlet_web_reviews"}, []string{"outlet_id", "link"}, pgx.CopyFromSlice(len(links), func(i int) ([]any, error) {
+		return []any{outletId, links[i]}, nil
+	}))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

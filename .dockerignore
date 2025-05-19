@@ -1,0 +1,20 @@
+# flyctl launch added from .gitignore
+# binaries
+**/server
+
+# env
+**/.env
+
+**/**/.DS_Store
+**/cmd/demos/servers/multifact/handlers/.DS_Store
+
+# flyctl launch added from .idea/.gitignore
+# Default ignored files
+.idea/shelf
+.idea/workspace.xml
+# Editor-based HTTP Client requests
+.idea/httpRequests
+# Datasource local storage ignored files
+.idea/dataSources
+.idea/dataSources.local.xml
+fly.toml

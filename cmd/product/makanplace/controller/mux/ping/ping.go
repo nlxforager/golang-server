@@ -36,7 +36,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 
 		resp.LoginUrls["google"] = goauthloginurl
 
-		session := mkService.GetSession(sessionId, true)
+		session := mkService.GetSession(sessionId, false)
 		resp.UserInfo = session
 
 		resp.OutletForm = OutletForm{

@@ -6,8 +6,8 @@ import (
 )
 
 type Response[T any] struct {
-	Data  T      `json:"data"`
-	Error string `json:"error"`
+	Data  T       `json:"data"`
+	Error *string `json:"error"`
 }
 
 func Error[T any](w http.ResponseWriter, httpCode int, err error, body T) {
@@ -16,7 +16,8 @@ func Error[T any](w http.ResponseWriter, httpCode int, err error, body T) {
 
 	r.Data = body
 	if err != nil {
-		r.Error = err.Error()
+		msg := err.Error()
+		r.Error = &msg
 	}
 
 	b, _ := json.Marshal(r)
@@ -28,7 +29,18 @@ func ErrorNoBody(w http.ResponseWriter, httpCode int, err error) {
 }
 
 func OkEmptyJsonBody(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("{}"))
+}
+
+func OkJsonBody[T any](w http.ResponseWriter, body T) {
+	w.Header().Set("Content-Type", "application/json")
+
+	w.WriteHeader(http.StatusOK)
+	var r Response[T]
+	r.Data = body
+	r.Error = nil
+	b, _ := json.Marshal(r)
+	w.Write(b)
 }

@@ -32,9 +32,10 @@ type Body struct {
 	Address       string `json:"address"`
 	PostalCode    string `json:"postal_code"`
 	OfficialLinks []Link `json:"official_links"`
+	ReviewLinks   []Link `json:"review_links"`
 }
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user_session.Service, middlewares middlewares.MiddewareStack, outletService *mk_outlet_service.OutletService) {
+func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user_session.Service, middlewares middlewares.MiddewareStack, outletService *mk_outlet_service.Service) {
 	// middleware: isSuperUser
 	mwsWithSuper := middlewares.Wrap(func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -79,6 +80,11 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 		for _, link := range b.OfficialLinks {
 			officialLinks = append(officialLinks, link.Value)
 		}
+
+		var reviewLinks []string
+		for _, link := range b.ReviewLinks {
+			reviewLinks = append(reviewLinks, link.Value)
+		}
 		err = outletService.AddOutlet(mk_outlet_service.ServiceBody{
 			OutletName:    b.OutletName,
 			OutletType:    b.OutletType,
@@ -86,6 +92,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 			Address:       b.Address,
 			PostalCode:    b.PostalCode,
 			OfficialLinks: officialLinks,
+			ReviewLinks:   reviewLinks,
 		})
 
 		if err != nil {
@@ -97,7 +104,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 		response_types.OkEmptyJsonBody(w)
 	})))
 
-	mux.Handle("GET /outlet/", middlewares.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("GET /outlets/", middlewares.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("outlets getting")
 		cookie, _ := r.Cookie(makanTokenCookieKey)
 		session := mkService.GetSession(cookie.Value, false)
@@ -106,13 +113,37 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 			return
 		}
 
-		log.Printf("session found %#v\n", session)
-
-		body, err := io.ReadAll(r.Body)
+		outletsS, err := outletService.GetOutlets()
 		if err != nil {
-			panic(err)
+			log.Printf("Error getting outlets: %v\n", err)
+			response_types.ErrorNoBody(w, http.StatusInternalServerError, err)
+			return
 		}
-		log.Println(string(body))
-		w.WriteHeader(http.StatusOK)
+
+		var out []Outlet
+		for _, o := range outletsS {
+			out = append(out, Outlet{
+				Name:          o.Name,
+				Address:       o.Address,
+				PostalCode:    o.PostalCode,
+				OfficialLinks: o.OfficialLinks,
+				ReviewLinks:   o.ReviewLinks,
+				LatLong:       o.LatLong,
+			})
+		}
+
+		log.Printf("outlets got %d\n", len(out))
+		response_types.OkJsonBody(w, struct {
+			Outlets []Outlet `json:"outlets"`
+		}{out})
 	})))
+}
+
+type Outlet struct {
+	Name                       string   `json:"name"`
+	Address                    string   `json:"address"`
+	PostalCode                 string   `json:"postal_code"`
+	OfficialLinks              []string `json:"official_links"`
+	*mk_outlet_service.LatLong `json:"latlong"`
+	ReviewLinks                []string `json:"review_links"`
 }
