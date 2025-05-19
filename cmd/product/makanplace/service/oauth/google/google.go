@@ -60,8 +60,12 @@ func (s *Service) UserInfo(state string, authCode string) (*oauth2.Userinfo, err
 			Method: "GET",
 			URL:    &url.URL{Scheme: "https", Host: "www.googleapis.com", Path: "/"},
 		})
+		if rErr == nil {
+			log.Printf("[trying to get] want %d got %s \n", 404, res.Status)
+		} else {
+			log.Printf("[trying to get] err %#v\n", rErr)
+		}
 
-		log.Printf("[trying to get] want %d got %s err %#v\n", 404, res.Status, rErr)
 	}
 	log.Printf("[trying to get] completed \n")
 
