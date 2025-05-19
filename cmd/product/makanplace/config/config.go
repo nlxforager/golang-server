@@ -35,7 +35,7 @@ func InitConfig() (c Config, e error) {
 
 	err := godotenv.Load()
 	if !(os.Getenv("OPTIONAL_LOAD_ENV_FILE") == "TRUE") && err != nil {
-		return Config{}, fmt.Errorf("error loading .env file\n")
+		return Config{}, fmt.Errorf("error loading .env file. OPTIONAL_LOAD_ENV_FILE=%s.\n", os.Getenv("OPTIONAL_LOAD_ENV_FILE"))
 	}
 	c.ServerConfig.Port = os.Getenv("LISTENING_PORT")
 	// database
