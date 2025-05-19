@@ -38,6 +38,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goa
 		}
 
 		w.Header().Set("Set-Cookie", makanTokenCookieKey+"="+sessionId+"; path=/; HttpOnly")
-		http.Redirect(w, r, gOAuthService.FrontEndHomePageURL(), http.StatusTemporaryRedirect)
+		referrer := r.Header.Get("Referer")
+		http.Redirect(w, r, referrer, http.StatusTemporaryRedirect)
 	})
 }

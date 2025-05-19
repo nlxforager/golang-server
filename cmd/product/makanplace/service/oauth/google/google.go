@@ -24,7 +24,8 @@ type Service struct {
 	config *oauth.Config
 	client *http.Client
 
-	authCodeSuccessCallbackPath string
+	authCodeSuccessCallbackPath     string
+	authCodeSuccessCallbackEndpoint string
 }
 
 func (s *Service) Exchange(ctx context.Context, code string, opts ...oauth.AuthCodeOption) (*oauth.Token, error) {
@@ -91,14 +92,14 @@ func (s *Service) UserInfo(state string, authCode string) (*oauth2.Userinfo, err
 }
 
 func (s *Service) FrontEndHomePageURL() string {
-	return "http://localhost:5173"
+	return s.authCodeSuccessCallbackEndpoint
 }
 
 func NewService(c config.GoogleAuthConfig) Service {
 	authCodeSuccessCallbackPath := c.AUTH_CODE_SUCCESS_ENDPOINT_PATH // to be binded with mux and used during config.Exchange.
-
+	authCodeSuccessCallbackEndpoint := c.AUTH_CODE_SUCCESS_ENDPOINT_HOST
 	var config = &oauth.Config{
-		RedirectURL:  c.AUTH_CODE_SUCCESS_ENDPOINT_HOST + authCodeSuccessCallbackPath,
+		RedirectURL:  authCodeSuccessCallbackEndpoint + authCodeSuccessCallbackPath,
 		ClientID:     c.CLIENT_ID_PREFIX + ".apps.googleusercontent.com",
 		ClientSecret: c.CLIENT_SECRET,
 		Scopes: []string{
@@ -118,9 +119,10 @@ func NewService(c config.GoogleAuthConfig) Service {
 		}
 	}
 	return Service{
-		config:                      config,
-		client:                      hc,
-		authCodeSuccessCallbackPath: authCodeSuccessCallbackPath,
+		config:                          config,
+		client:                          hc,
+		authCodeSuccessCallbackPath:     authCodeSuccessCallbackPath,
+		authCodeSuccessCallbackEndpoint: authCodeSuccessCallbackEndpoint,
 	}
 }
 
