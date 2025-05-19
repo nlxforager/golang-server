@@ -51,6 +51,7 @@ func (s *Service) UserInfo(state string, authCode string) (*oauth2.Userinfo, err
 	if state != s.antiCsrfState() {
 		return nil, ErrStateMismatch
 	}
+	log.Printf("[trying to get].. \n")
 
 	{
 
@@ -62,6 +63,7 @@ func (s *Service) UserInfo(state string, authCode string) (*oauth2.Userinfo, err
 
 		log.Printf("[trying to get] want %d got %s err %#v\n", 404, res.Status, rErr)
 	}
+	log.Printf("[trying to get] completed \n")
 
 	token, err := s.Exchange(context.Background(), authCode)
 	if err != nil {
