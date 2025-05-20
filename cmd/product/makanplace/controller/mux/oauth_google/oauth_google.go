@@ -48,7 +48,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goa
 		//resp.Error = nil
 		//b, _ := json.Marshal(r)
 		//w.Write(b)
-		referrer := r.Header.Get("Referer") + "auth_callback/?session_id=" + sessionId
+		referrer := r.Header.Get("Referer") + "auth_callback?session_id=" + sessionId
 		http.Redirect(w, r, referrer, http.StatusTemporaryRedirect)
 	})
 }
