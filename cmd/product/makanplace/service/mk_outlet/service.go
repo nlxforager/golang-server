@@ -38,6 +38,7 @@ type Outlet struct {
 	ReviewLinks   []string `json:"reviewLinks"`
 
 	*LatLong `json:"latlong"`
+	Id       int64 `json:"id"`
 }
 
 func (s *Service) GetOutlets() ([]Outlet, error) {
@@ -75,6 +76,7 @@ func (s *Service) GetOutlets() ([]Outlet, error) {
 			OfficialLinks: outlet.OfficialLinks,
 			LatLong:       latlong,
 			ReviewLinks:   outlet.ReviewLinks,
+			Id:            outlet.Id,
 		})
 	}
 	return outlets, nil
