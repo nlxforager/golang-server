@@ -93,11 +93,9 @@ func main() {
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)
 		http.ListenAndServe(Config.ServerConfig.Port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+			r = mklog.HttpRequestWithValues(r)
 			log.Printf("%s [middleware 0]\n", mklog.SPrintHttpRequestPrefix(r))
-
 			c.ServeHTTP(w, r)
-
 		}))
 	}()
 	recvSig := <-eCh
