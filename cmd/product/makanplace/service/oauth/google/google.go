@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"golang-server/cmd/product/makanplace/config"
@@ -28,37 +29,72 @@ type Service struct {
 
 	authCodeSuccessCallbackPath     string
 	authCodeSuccessCallbackEndpoint string
-	csrfToken                       string
 }
 
 func (s *Service) Exchange(ctx context.Context, code string, opts ...oauth.AuthCodeOption) (*oauth.Token, error) {
 	return s.config.Exchange(ctx, code, opts...)
 }
 
-func (s *Service) AuthCodeURL() string {
+func (s *Service) AuthCodeURL(origin string) (string, error) {
 	//return s.config.AuthCodeURL(s.antiCsrfState(), oauth.SetAuthURLParam("prompt", ""))
-	return s.config.AuthCodeURL(s.antiCsrfState(), oauth.SetAuthURLParam("prompt", "consent select_account"))
+	csrf, err := s.setAntiCsrf(origin)
+	if err != nil {
+		return "", err
+	}
+	return s.config.AuthCodeURL(csrf, oauth.SetAuthURLParam("prompt", "consent select_account")), nil
 }
 
 func (s *Service) AuthCodeSuccessCallbackPath() string {
 	return s.authCodeSuccessCallbackPath
 }
 
-func (s *Service) antiCsrfState() string {
-	return s.csrfToken
+var antCsrfOrigin = make(map[ /*csrf*/ string] /*origin*/ string)
+var lock sync.RWMutex
+
+func (s *Service) antiCsrfState(csrf string) (string, error) {
+	lock.Lock()
+	defer lock.Unlock()
+
+	o, ok := antCsrfOrigin[csrf]
+	log.Printf("antiCsrfState() %#v \n", antCsrfOrigin)
+
+	if !ok {
+		return "", errors.New("csrf not found in antiCsrfOrigin")
+	}
+
+	return o, nil
+}
+
+func (s *Service) setAntiCsrf(origin string) (string, error) {
+	log.Printf("Setting antiCsrfOrigin\n")
+	b := make([]byte, 8)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", errors.New("anti-csrf generation failed")
+	}
+	antiCsrf := base64.RawURLEncoding.EncodeToString(b)
+	log.Printf("Setting antiCsrfOrigin locking %s\n ", antiCsrf)
+
+	lock.Lock()
+	antCsrfOrigin[antiCsrf] = origin
+	log.Printf("Setting antiCsrfOrigin unlocking\n ")
+
+	lock.Unlock()
+	log.Printf("Setting antiCsrfOrigin end %#v\n", antCsrfOrigin)
+
+	return antiCsrf, nil
 }
 
 var ErrStateMismatch = errors.New("state mismatch")
 var ErrExchangeTokenFailed = errors.New("exchange token failed")
 
-func (s *Service) UserInfo(state string, authCode string) (*oauth2.Userinfo, error) {
-	if state != s.antiCsrfState() {
-		return nil, ErrStateMismatch
+func (s *Service) UserInfo(state string, authCode string) (_ *oauth2.Userinfo, origin string, _ error) {
+	origin, err := s.antiCsrfState(state)
+	if err != nil {
+		return nil, "", ErrStateMismatch
 	}
 	log.Printf("[trying to get].. \n")
-
 	{
-
 		c := http.Client{}
 		res, rErr := c.Do(&http.Request{
 			Method: "GET",
@@ -72,26 +108,25 @@ func (s *Service) UserInfo(state string, authCode string) (*oauth2.Userinfo, err
 
 	}
 	log.Printf("[trying to get] completed \n")
-
 	token, err := s.Exchange(context.Background(), authCode)
 	if err != nil {
 		log.Printf("error: %v\n", err)
-		return nil, ErrExchangeTokenFailed
+		return nil, "", ErrExchangeTokenFailed
 	}
 	log.Printf("token: %v\n", token)
 	authHc := option.WithHTTPClient(s.client)
 	authService, err := oauth2.NewService(context.Background(), authHc, option.WithTokenSource(s.config.TokenSource(context.Background(), token)))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	userInfoService := oauth2.NewUserinfoService(authService)
 	req := userInfoService.Get()
 	userInfo, err := req.Do(googleapi.QueryParameter("access_token", token.AccessToken))
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return userInfo, nil
+	return userInfo, origin, nil
 }
 
 func (s *Service) FrontEndHomePageURL() string {
@@ -122,18 +157,11 @@ func NewService(c config.GoogleAuthConfig) Service {
 		}
 	}
 
-	b := make([]byte, 8)
-	rand.Read(b)
-	antiCsrf := base64.RawURLEncoding.EncodeToString(b)
-	if antiCsrf == "" {
-		antiCsrf = "D1S2C3R4F"
-	}
 	return Service{
 		config:                          config,
 		client:                          hc,
 		authCodeSuccessCallbackPath:     authCodeSuccessCallbackPath,
 		authCodeSuccessCallbackEndpoint: authCodeSuccessCallbackEndpoint,
-		csrfToken:                       antiCsrf,
 	}
 }
 
