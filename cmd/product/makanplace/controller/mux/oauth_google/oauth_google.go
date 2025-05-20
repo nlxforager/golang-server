@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	log2 "golang-server/cmd/product/makanplace/log"
+	log2 "golang-server/cmd/product/makanplace/httplog"
 	"golang-server/cmd/product/makanplace/service/mk_user_session"
 	goauthservice "golang-server/cmd/product/makanplace/service/oauth/google"
 
@@ -25,7 +25,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goa
 
 		gmailUserInfo, err := gOAuthService.UserInfo(state, authCode)
 		if err != nil {
-			log.Printf("%s Error getting user info: %v", log2.HttpRequestPrefix(r.Context()), err)
+			log.Printf("%s Error getting user info: %v", log2.SPrintHttpRequestPrefix(r), err)
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}

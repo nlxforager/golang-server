@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"golang-server/cmd/product/makanplace/httplog"
 	"io"
 	"net/http"
 	"time"
@@ -15,18 +16,20 @@ type LoggingRoundTripper struct {
 func (lrt *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
 
-	// Log request
-	fmt.Printf("[HTTP Request] %s %s\n", req.Method, req.URL.String())
+	req = httplog.HttpRequestWithValues(req)
+
+	prefix := httplog.SPrintHttpRequestPrefix(req)
+	fmt.Printf("%s received", prefix)
 	if req.Body != nil {
 		bodyBytes, _ := io.ReadAll(req.Body)
 		req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // Reset body
-		fmt.Printf("[Request Body] %s\n", string(bodyBytes))
+		fmt.Printf("[%s] body:", bodyBytes)
 	}
 
 	// Perform the actual request
 	resp, err := lrt.rt.RoundTrip(req)
 	if err != nil {
-		fmt.Printf("[HTTP Error] %v\n", err)
+		fmt.Printf("%s Round Trip Error: [%s]", prefix, err)
 		return nil, err
 	}
 
@@ -35,7 +38,7 @@ func (lrt *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 	if resp.Body != nil {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // Reset body
-		fmt.Printf("[Response Body] %s\n", string(bodyBytes))
+		fmt.Printf("%s Response Body: [%s]", prefix, bodyBytes)
 	}
 
 	return resp, nil

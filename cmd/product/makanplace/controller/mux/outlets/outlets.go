@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"slices"
 
-	log2 "golang-server/cmd/product/makanplace/log"
+	log2 "golang-server/cmd/product/makanplace/httplog"
 
 	"golang-server/cmd/product/makanplace/controller/middlewares"
 	"golang-server/cmd/product/makanplace/controller/response_types"
@@ -60,7 +60,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 	})
 
 	mux.Handle("POST /outlet/", mwsWithSuper.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		prefix := fmt.Sprintf("%s [POST /outlet]\n", log2.HttpRequestPrefix(r.Context()))
+		prefix := fmt.Sprintf("%s [POST /outlet]\n", log2.SPrintHttpRequestPrefix(r))
 		cookie, _ := r.Cookie(makanTokenCookieKey)
 		session := mkService.GetSession(cookie.Value, false)
 		if session == nil {

@@ -1,0 +1,26 @@
+package httplog
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/google/uuid"
+)
+
+func HttpRequestWithValues(req *http.Request) *http.Request {
+	ctx := context.WithValue(req.Context(), "METHOD", req.Method)
+
+	traceId := uuid.New().String()
+	ctx = context.WithValue(req.Context(), "TRACE_ID", traceId)
+	ctx = context.WithValue(ctx, "URL/PATH", req.URL.String()+"/"+req.URL.Path)
+	ctx = context.WithValue(ctx, "ORIGIN", req.Header.Get("Origin"))
+	ctx = context.WithValue(ctx, "USER-AGENT", req.Header.Get("User-Agent"))
+	req = req.WithContext(ctx)
+	return req
+}
+
+func SPrintHttpRequestPrefix(req *http.Request) string {
+	ctx := req.Context()
+	return fmt.Sprintf("[METHOD:%s URL:%s ORIGIN:%s UA: %s TRACE_ID:%s]", ctx.Value("METHOD"), ctx.Value("URL"), ctx.Value("ORIGIN"), ctx.Value("USER-AGENT"), ctx.Value("TRACE_ID"))
+}

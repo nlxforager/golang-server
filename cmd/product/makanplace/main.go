@@ -12,7 +12,7 @@ import (
 
 	"golang-server/cmd/product/makanplace/config"
 	"golang-server/cmd/product/makanplace/controller/middlewares"
-	mklog "golang-server/cmd/product/makanplace/log"
+	mklog "golang-server/cmd/product/makanplace/httplog"
 
 	authrepo "golang-server/cmd/product/makanplace/repositories/auth"
 	outletrepo "golang-server/cmd/product/makanplace/repositories/outlet"
@@ -57,16 +57,16 @@ func main() {
 	//
 	authMiddleware := defaultMiddlewares.Wrap(func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("%s %s middleware:auth %s \n", r.Method, r.URL.Path, mklog.HttpRequestPrefix(r.Context()))
+			log.Printf("%s middleware:auth \n", mklog.SPrintHttpRequestPrefix(r))
 			cookie, _ := r.Cookie(makanTokenCookieKey)
 			session := mkUserSessionService.GetSession(cookie.Value, true)
 			if session == nil {
-				log.Printf("%s %s middleware:auth %s session not found", r.Method, r.URL.Path, mklog.HttpRequestPrefix(r.Context()))
+				log.Printf("%s [middleware:auth] session not found", mklog.SPrintHttpRequestPrefix(r))
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
+			log.Printf("%s middleware:auth session found\n", mklog.SPrintHttpRequestPrefix(r))
 
-			log.Printf("session found %#v\n", session)
 			handler.ServeHTTP(w, r)
 		})
 	})
@@ -92,12 +92,8 @@ func main() {
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)
 		http.ListenAndServe(Config.ServerConfig.Port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), "METHOD", r.Method)
-			ctx = context.WithValue(ctx, "URL", r.URL.String())
-			ctx = context.WithValue(ctx, "ORIGIN", r.Header.Get("Origin"))
-			ctx = context.WithValue(ctx, "USER-AGENT", r.Header.Get("User-Agent"))
-			r = r.WithContext(ctx)
-			log.Printf("%s [middleware 0]\n", mklog.HttpRequestPrefix(r.Context()))
+
+			log.Printf("%s [middleware 0]\n", mklog.SPrintHttpRequestPrefix(r))
 
 			c.ServeHTTP(w, r)
 
