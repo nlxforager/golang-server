@@ -16,7 +16,7 @@ func HttpRequestWithValues(req *http.Request) *http.Request {
 	ctx := context.WithValue(req.Context(), "METHOD", method)
 
 	traceId := uuid.New().String()
-	ctx = context.WithValue(req.Context(), "TRACE_ID", traceId)
+	ctx = context.WithValue(ctx, "TRACE_ID", traceId)
 	ctx = context.WithValue(ctx, "URL/PATH", req.URL.String())
 	ctx = context.WithValue(ctx, "ORIGIN", req.Header.Get("Origin"))
 	ctx = context.WithValue(ctx, "USER-AGENT", req.Header.Get("User-Agent"))
