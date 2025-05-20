@@ -9,7 +9,11 @@ import (
 )
 
 func HttpRequestWithValues(req *http.Request) *http.Request {
-	ctx := context.WithValue(req.Context(), "METHOD", req.Method)
+	method := req.Method
+	if req.Method == "" {
+		method = "GET"
+	}
+	ctx := context.WithValue(req.Context(), "METHOD", method)
 
 	traceId := uuid.New().String()
 	ctx = context.WithValue(req.Context(), "TRACE_ID", traceId)
@@ -22,5 +26,5 @@ func HttpRequestWithValues(req *http.Request) *http.Request {
 
 func SPrintHttpRequestPrefix(req *http.Request) string {
 	ctx := req.Context()
-	return fmt.Sprintf("[METHOD:%s URL:%s ORIGIN:%s UA: %s TRACE_ID:%s]", ctx.Value("METHOD"), ctx.Value("URL"), ctx.Value("ORIGIN"), ctx.Value("USER-AGENT"), ctx.Value("TRACE_ID"))
+	return fmt.Sprintf("[METHOD:%s URL:%s ORIGIN:%s UA: %s TRACE_ID:%s]", ctx.Value("METHOD"), ctx.Value("URL/PATH"), ctx.Value("ORIGIN"), ctx.Value("USER-AGENT"), ctx.Value("TRACE_ID"))
 }
