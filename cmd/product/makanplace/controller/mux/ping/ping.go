@@ -23,12 +23,12 @@ type Response struct {
 	OutletForm `json:"outlet_form"`
 }
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user_session.Service, goauthloginurl string, mws middlewares.MiddewareStack) {
+func Register(mux *http.ServeMux, mkService *mk_user_session.Service, goauthloginurl string, mws middlewares.MiddewareStack) {
 	// Checks current user state of the client
 	// Provides server configuration values
 
 	mux.Handle("/ping", mws.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sessionId := middlewares.GetAuthorizationFromRequest(r)
+		sessionId := middlewares.GetSessionFromRequest(r)
 		log.Printf("%s sessionId: %s\n", httplog.SPrintHttpRequestPrefix(r), sessionId)
 
 		resp := Response{LoginUrls: make(map[string]string)}

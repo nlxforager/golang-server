@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func GetAuthorizationFromRequest(r *http.Request) string {
+func GetSessionFromRequest(r *http.Request) string {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return ""

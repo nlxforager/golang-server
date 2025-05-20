@@ -35,12 +35,12 @@ type Body struct {
 	ReviewLinks   []Link `json:"review_links"`
 }
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user_session.Service, middlewares middlewares.MiddewareStack, outletService *mk_outlet_service.Service) {
+func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user_session.Service, mws middlewares.MiddewareStack, outletService *mk_outlet_service.Service) {
 	// middleware: isSuperUser
-	mwsWithSuper := middlewares.Wrap(func(handler http.Handler) http.Handler {
+	mwsWithSuper := mws.Wrap(func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cookie, _ := r.Cookie(makanTokenCookieKey)
-			session := mkService.GetSession(cookie.Value, false)
+			sessionId := middlewares.GetSessionFromRequest(r)
+			session := mkService.GetSession(sessionId, false)
 			log.Printf("checking IsSuperUser: %#v\n", session)
 
 			if len(session.Gmails) == 0 {
@@ -61,12 +61,6 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 
 	mux.Handle("POST /outlet/", mwsWithSuper.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		prefix := fmt.Sprintf("%s [POST /outlet]\n", log2.SPrintHttpRequestPrefix(r))
-		cookie, _ := r.Cookie(makanTokenCookieKey)
-		session := mkService.GetSession(cookie.Value, false)
-		if session == nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
@@ -104,7 +98,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 		response_types.OkEmptyJsonBody(w)
 	})))
 
-	mux.Handle("GET /outlets/", middlewares.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("GET /outlets/", mws.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("outlets getting")
 		cookie, _ := r.Cookie(makanTokenCookieKey)
 		session := mkService.GetSession(cookie.Value, false)

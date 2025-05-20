@@ -63,7 +63,7 @@ func main() {
 	})
 
 	goauthmux.Register(mux, makanTokenCookieKey, &goauthService, mkUserSessionService, goauthloginurl)
-	ping.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl, defaultMiddlewares)
+	ping.Register(mux, mkUserSessionService, goauthloginurl, defaultMiddlewares)
 	mksessionmux.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl, defaultMiddlewares)
 
 	outletRepo := outletrepo.New(DbConnPool)
