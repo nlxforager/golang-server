@@ -100,8 +100,8 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 
 	mux.Handle("GET /outlets/", mws.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("outlets getting")
-		cookie, _ := r.Cookie(makanTokenCookieKey)
-		session := mkService.GetSession(cookie.Value, false)
+		sessionId := middlewares.GetSessionIdFromRequest(r)
+		session := mkService.GetSession(sessionId, false)
 		if session == nil {
 			w.WriteHeader(http.StatusOK)
 			return
