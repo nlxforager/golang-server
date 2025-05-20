@@ -35,9 +35,13 @@ func OkEmptyJsonBody(w http.ResponseWriter) {
 }
 
 func OkJsonBody[T any](w http.ResponseWriter, body T) {
+	JsonBody(w, http.StatusOK, body)
+}
+
+func JsonBody[T any](w http.ResponseWriter, httpStatusCode int, body T) {
 	w.Header().Set("Content-Type", "application/json")
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(httpStatusCode)
 	var r Response[T]
 	r.Data = body
 	r.Error = nil
