@@ -3,6 +3,8 @@ package google
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -26,6 +28,7 @@ type Service struct {
 
 	authCodeSuccessCallbackPath     string
 	authCodeSuccessCallbackEndpoint string
+	csrfToken                       string
 }
 
 func (s *Service) Exchange(ctx context.Context, code string, opts ...oauth.AuthCodeOption) (*oauth.Token, error) {
@@ -33,7 +36,7 @@ func (s *Service) Exchange(ctx context.Context, code string, opts ...oauth.AuthC
 }
 
 func (s *Service) AuthCodeURL() string {
-	return s.config.AuthCodeURL(s.antiCsrfState(), oauth.SetAuthURLParam("prompt", ""))
+	//return s.config.AuthCodeURL(s.antiCsrfState(), oauth.SetAuthURLParam("prompt", ""))
 	return s.config.AuthCodeURL(s.antiCsrfState(), oauth.SetAuthURLParam("prompt", "consent select_account"))
 }
 
@@ -42,7 +45,7 @@ func (s *Service) AuthCodeSuccessCallbackPath() string {
 }
 
 func (s *Service) antiCsrfState() string {
-	return "SOME_STATE"
+	return s.csrfToken
 }
 
 var ErrStateMismatch = errors.New("state mismatch")
@@ -118,11 +121,19 @@ func NewService(c config.GoogleAuthConfig) Service {
 			},
 		}
 	}
+
+	b := make([]byte, 8)
+	rand.Read(b)
+	antiCsrf := base64.RawURLEncoding.EncodeToString(b)
+	if antiCsrf == "" {
+		antiCsrf = "D1S2C3R4F"
+	}
 	return Service{
 		config:                          config,
 		client:                          hc,
 		authCodeSuccessCallbackPath:     authCodeSuccessCallbackPath,
 		authCodeSuccessCallbackEndpoint: authCodeSuccessCallbackEndpoint,
+		csrfToken:                       antiCsrf,
 	}
 }
 
