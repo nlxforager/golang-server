@@ -28,7 +28,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, goauthlogi
 	// Provides server configuration values
 
 	mux.Handle("/ping", mws.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sessionId := middlewares.GetSessionFromRequest(r)
+		sessionId := middlewares.GetSessionIdFromRequest(r)
 		log.Printf("%s sessionId: %s\n", httplog.SPrintHttpRequestPrefix(r), sessionId)
 
 		resp := Response{LoginUrls: make(map[string]string)}

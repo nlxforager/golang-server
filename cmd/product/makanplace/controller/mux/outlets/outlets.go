@@ -39,7 +39,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 	// middleware: isSuperUser
 	mwsWithSuper := mws.Wrap(func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			sessionId := middlewares.GetSessionFromRequest(r)
+			sessionId := middlewares.GetSessionIdFromRequest(r)
 			session := mkService.GetSession(sessionId, false)
 			log.Printf("checking IsSuperUser: %#v\n", session)
 
