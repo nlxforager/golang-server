@@ -3,7 +3,6 @@ package outlet
 import (
 	"context"
 	"fmt"
-	"github.com/lib/pq"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -126,16 +125,16 @@ func (r *Repo) NewOutletWithMenu(outletName string, address string, postal strin
 }
 
 type Outlet struct {
-	LatLong       *[]string
+	LatLong       []string
 	Name          string
 	Address       string
 	PostalCode    string
-	OfficialLinks *[]pq.StringArray
-	ReviewLinks   *[]pq.StringArray
+	OfficialLinks []string
+	ReviewLinks   []string
 }
 
 func (r *Repo) GetOutlets() ([]Outlet, error) {
-	rows, err := r.conn.Query(context.Background(), "select name, address, postal_code, official_links, latlong, array_agg(owr.link) from outlet left join public.outlet_web_reviews owr on outlet.id = owr.outlet_id group by outlet.id;")
+	rows, err := r.conn.Query(context.Background(), "select name, address, postal_code, official_links, latlong, array_agg(owr.link) filter (where owr.link is not null) from outlet left join public.outlet_web_reviews owr on outlet.id = owr.outlet_id group by outlet.id;")
 	if err != nil {
 		return nil, err
 	}
