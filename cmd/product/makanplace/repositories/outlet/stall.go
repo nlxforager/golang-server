@@ -134,7 +134,7 @@ type Outlet struct {
 }
 
 func (r *Repo) GetOutlets() ([]Outlet, error) {
-	rows, err := r.conn.Query(context.Background(), "select name, address, postal_code, official_links, latlong, array_agg(owr.link) from outlet inner join public.outlet_web_reviews owr on outlet.id = owr.outlet_id group by outlet.id;")
+	rows, err := r.conn.Query(context.Background(), "select name, address, postal_code, official_links, latlong, array_agg(owr.link) from outlet left join public.outlet_web_reviews owr on outlet.id = owr.outlet_id group by outlet.id;")
 	if err != nil {
 		return nil, err
 	}
