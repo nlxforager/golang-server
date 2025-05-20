@@ -95,6 +95,7 @@ func main() {
 			ctx := context.WithValue(r.Context(), "METHOD", r.Method)
 			ctx = context.WithValue(ctx, "URL", r.URL.String())
 			ctx = context.WithValue(ctx, "ORIGIN", r.Header.Get("Origin"))
+			ctx = context.WithValue(ctx, "USER-AGENT", r.Header.Get("User-Agent"))
 			r = r.WithContext(ctx)
 			log.Printf("%s [middleware 0]\n", mklog.HttpRequestPrefix(r.Context()))
 
