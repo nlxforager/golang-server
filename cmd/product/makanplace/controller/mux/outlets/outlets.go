@@ -42,17 +42,11 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 			sessionId := middlewares.GetSessionIdFromRequest(r)
 			session := mkService.GetSession(sessionId, false)
 			log.Printf("checking IsSuperUser: %#v\n", session)
-
-			if len(session.Gmails) == 0 {
-				log.Printf("not IsSuperUser: no gmails to compare\n")
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-			if slices.ContainsFunc(session.Gmails, func(gmail string) bool {
+			// no gmails supplied or any of the gmails is not SU.
+			if len(session.Gmails) == 0 || slices.ContainsFunc(session.Gmails, func(gmail string) bool {
 				return !mkService.IsSuperUser(gmail)
 			}) {
-				log.Printf("not IsSuperUser: some gmail is not super.\n")
-				w.WriteHeader(http.StatusUnauthorized)
+				response_types.ErrorNoBody(w, http.StatusUnauthorized, fmt.Errorf("not permitted to add outlet"))
 				return
 			}
 			handler.ServeHTTP(w, r)

@@ -10,11 +10,11 @@ type Response[T any] struct {
 	Error *string `json:"error"`
 }
 
-func Error[T any](w http.ResponseWriter, httpCode int, err error, body T) {
+func Error[T any](w http.ResponseWriter, httpCode int, err error, data T) {
 	w.WriteHeader(httpCode)
 	var r Response[T]
 
-	r.Data = body
+	r.Data = data
 	if err != nil {
 		msg := err.Error()
 		r.Error = &msg
