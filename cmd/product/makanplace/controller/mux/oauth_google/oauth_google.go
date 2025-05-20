@@ -2,11 +2,11 @@ package oauth_google
 
 import (
 	"fmt"
-	"golang-server/cmd/product/makanplace/controller/response_types"
 	"log"
 	"net/http"
 	"net/url"
 
+	"golang-server/cmd/product/makanplace/controller/response_types"
 	mklog "golang-server/cmd/product/makanplace/httplog"
 	"golang-server/cmd/product/makanplace/service/mk_user_session"
 	goauthservice "golang-server/cmd/product/makanplace/service/oauth/google"
