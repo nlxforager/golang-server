@@ -126,12 +126,12 @@ func (r *Repo) NewOutletWithMenu(outletName string, address string, postal strin
 }
 
 type Outlet struct {
-	LatLong       pq.StringArray
+	LatLong       *[]string
 	Name          string
 	Address       string
 	PostalCode    string
-	OfficialLinks pq.StringArray
-	ReviewLinks   pq.StringArray
+	OfficialLinks *[]pq.StringArray
+	ReviewLinks   *[]pq.StringArray
 }
 
 func (r *Repo) GetOutlets() ([]Outlet, error) {
