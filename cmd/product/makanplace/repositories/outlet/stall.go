@@ -131,10 +131,11 @@ type Outlet struct {
 	PostalCode    string
 	OfficialLinks []string
 	ReviewLinks   []string
+	Id            int64
 }
 
 func (r *Repo) GetOutlets() ([]Outlet, error) {
-	rows, err := r.conn.Query(context.Background(), "select name, address, postal_code, official_links, latlong, array_agg(owr.link) filter (where owr.link is not null) from outlet left join public.outlet_web_reviews owr on outlet.id = owr.outlet_id group by outlet.id;")
+	rows, err := r.conn.Query(context.Background(), "select outlet.id, name, address, postal_code, official_links, latlong, array_agg(owr.link) filter (where owr.link is not null) from outlet left join public.outlet_web_reviews owr on outlet.id = owr.outlet_id group by outlet.id;")
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +144,7 @@ func (r *Repo) GetOutlets() ([]Outlet, error) {
 
 		var o Outlet
 
-		rows.Scan(&o.Name, &o.Address, &o.PostalCode, &o.OfficialLinks, &o.LatLong, &o.ReviewLinks)
+		rows.Scan(&o.Id, &o.Name, &o.Address, &o.PostalCode, &o.OfficialLinks, &o.LatLong, &o.ReviewLinks)
 		outlets = append(outlets, o)
 	}
 	err = rows.Err()
