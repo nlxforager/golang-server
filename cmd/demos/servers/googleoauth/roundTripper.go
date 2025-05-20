@@ -16,7 +16,7 @@ type LoggingRoundTripper struct {
 func (lrt *LoggingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	start := time.Now()
 
-	req = httplog.HttpRequestWithValues(req)
+	req = httplog.ContextualizeHttpRequest(req)
 
 	prefix := httplog.SPrintHttpRequestPrefix(req)
 	fmt.Printf("%s received", prefix)

@@ -59,6 +59,9 @@ func (s *Service) CreateUserSession(googleCredentials []*oauth2.Userinfo) (strin
 
 // GetSession if hardened, dont return confidential values
 func (s *Service) GetSession(sessionId string, hard bool) *auth.UserWithGmail {
+	if sessionId == "" {
+		return nil
+	}
 	s.sessionMap.l.RLock()
 	defer s.sessionMap.l.RUnlock()
 	session, ok := s.sessionMap.m[sessionId]

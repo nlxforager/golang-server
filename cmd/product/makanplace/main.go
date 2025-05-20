@@ -58,16 +58,6 @@ func main() {
 	//
 	authMiddleware := defaultMiddlewares.Wrap(func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log.Printf("%s middleware:auth \n", mklog.SPrintHttpRequestPrefix(r))
-			cookie, _ := r.Cookie(makanTokenCookieKey)
-			session := mkUserSessionService.GetSession(cookie.Value, true)
-			if session == nil {
-				log.Printf("%s [middleware:auth] session not found", mklog.SPrintHttpRequestPrefix(r))
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-			log.Printf("%s middleware:auth session found\n", mklog.SPrintHttpRequestPrefix(r))
-
 			handler.ServeHTTP(w, r)
 		})
 	})
@@ -93,7 +83,7 @@ func main() {
 	go func() {
 		log.Println("Listening on " + Config.ServerConfig.Port)
 		http.ListenAndServe(Config.ServerConfig.Port, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r = mklog.HttpRequestWithValues(r)
+			r = mklog.ContextualizeHttpRequest(r)
 			log.Printf("%s [middleware 0]\n", mklog.SPrintHttpRequestPrefix(r))
 			c.ServeHTTP(w, r)
 		}))

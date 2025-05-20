@@ -28,15 +28,10 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 	// Provides server configuration values
 
 	mux.Handle("/ping", mws.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, _ := r.Cookie(makanTokenCookieKey)
-		var sessionId string
-		if cookie != nil {
-			sessionId = cookie.Value
-		}
+		sessionId := middlewares.GetAuthorizationFromRequest(r)
 		log.Printf("%s sessionId: %s\n", httplog.SPrintHttpRequestPrefix(r), sessionId)
 
 		resp := Response{LoginUrls: make(map[string]string)}
-
 		resp.LoginUrls["google"] = goauthloginurl
 
 		session := mkService.GetSession(sessionId, false)

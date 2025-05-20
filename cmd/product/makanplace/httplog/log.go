@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"golang-server/cmd/product/makanplace/controller/middlewares"
+
 	"github.com/google/uuid"
 )
 
-func HttpRequestWithValues(req *http.Request) *http.Request {
+func ContextualizeHttpRequest(req *http.Request) *http.Request {
 	method := req.Method
 	if req.Method == "" {
 		method = "GET"
@@ -20,6 +22,7 @@ func HttpRequestWithValues(req *http.Request) *http.Request {
 	ctx = context.WithValue(ctx, "URL/PATH", req.URL.String())
 	ctx = context.WithValue(ctx, "ORIGIN", req.Header.Get("Origin"))
 	ctx = context.WithValue(ctx, "USER-AGENT", req.Header.Get("User-Agent"))
+	ctx = context.WithValue(ctx, "SESSION_ID", middlewares.GetAuthorizationFromRequest(req))
 	req = req.WithContext(ctx)
 	return req
 }
