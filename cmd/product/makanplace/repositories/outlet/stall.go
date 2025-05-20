@@ -3,6 +3,7 @@ package outlet
 import (
 	"context"
 	"fmt"
+	"github.com/lib/pq"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -125,12 +126,12 @@ func (r *Repo) NewOutletWithMenu(outletName string, address string, postal strin
 }
 
 type Outlet struct {
-	LatLong       []string
+	LatLong       pq.StringArray
 	Name          string
 	Address       string
 	PostalCode    string
-	OfficialLinks []string
-	ReviewLinks   []string
+	OfficialLinks pq.StringArray
+	ReviewLinks   pq.StringArray
 }
 
 func (r *Repo) GetOutlets() ([]Outlet, error) {
