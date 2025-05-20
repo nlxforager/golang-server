@@ -33,8 +33,6 @@ import (
 var Config config.Config
 var DbConnPool *pgxpool.Pool
 
-func makanTokenCookieKey() string { return "makantoken" }
-
 func main() {
 	log.Println("Starting makanplace::main().")
 	if err := Init(); err != nil {
@@ -48,7 +46,6 @@ func main() {
 	mux := http.NewServeMux()
 	mkAuthRepository := authrepo.New(DbConnPool)
 	mkUserSessionService := mk_user_session.New(mkAuthRepository, Config.AdminConfig)
-	makanTokenCookieKey := makanTokenCookieKey()
 
 	// controller
 	goauthloginurl := "/auth/google/login"
@@ -62,20 +59,20 @@ func main() {
 		})
 	})
 
-	goauthmux.Register(mux, makanTokenCookieKey, &goauthService, mkUserSessionService, goauthloginurl)
+	goauthmux.Register(mux, &goauthService, mkUserSessionService, goauthloginurl)
 	ping.Register(mux, mkUserSessionService, goauthloginurl, defaultMiddlewares)
-	mksessionmux.Register(mux, makanTokenCookieKey, mkUserSessionService, goauthloginurl, defaultMiddlewares)
+	mksessionmux.Register(mux, mkUserSessionService, goauthloginurl, defaultMiddlewares)
 
 	outletRepo := outletrepo.New(DbConnPool)
 	outletService := mk_outlet_service.NewOutletService(outletRepo)
 
-	outletmux.Register(mux, makanTokenCookieKey, mkUserSessionService, authMiddleware, outletService)
+	outletmux.Register(mux, mkUserSessionService, authMiddleware, outletService)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   append(Config.ServerConfig.Cors.AllowedOrigins, "http://localhost:5173", "http://localhost:4173"),
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-		AllowedHeaders:   []string{makanTokenCookieKey, "Accept", "Authorization", "Content-Type", "X-Requested-With"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Requested-With"},
 		// Enable Debugging for testing, consider disabling in production
 		Debug: true,
 	}).Handler(mux)

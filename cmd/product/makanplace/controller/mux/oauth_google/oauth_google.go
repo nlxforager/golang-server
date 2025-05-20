@@ -18,7 +18,7 @@ type Session struct {
 	Session string `json:"session_id"`
 }
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goauthservice.Service, mkService *mk_user_session.Service, goauthloginurl string) {
+func Register(mux *http.ServeMux, gOAuthService *goauthservice.Service, mkService *mk_user_session.Service, goauthloginurl string) {
 	mux.HandleFunc(goauthloginurl, func(w http.ResponseWriter, r *http.Request) {
 
 		origin := r.Header.Get("Origin")
@@ -57,7 +57,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, gOAuthService *goa
 		}
 		fmt.Printf("%s sessionId %s\n", mklog.SPrintHttpRequestPrefix(r), sessionId)
 
-		w.Header().Set("Set-Cookie", makanTokenCookieKey+"="+sessionId+"; path=/; HttpOnly; SameSite=None; Secure;")
+		//w.Header().Set("Set-Cookie", makanTokenCookieKey+"="+sessionId+"; path=/; HttpOnly; SameSite=None; Secure;")
 		//w.Header().Set("Content-Type", "application/json")
 		//
 		//var resp response_types.Response[Session]

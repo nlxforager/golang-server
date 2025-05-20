@@ -35,7 +35,7 @@ type Body struct {
 	ReviewLinks   []Link `json:"review_links"`
 }
 
-func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user_session.Service, mws middlewares.MiddewareStack, outletService *mk_outlet_service.Service) {
+func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middlewares.MiddewareStack, outletService *mk_outlet_service.Service) {
 	// middleware: isSuperUser
 	mwsWithSuper := mws.Wrap(func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
