@@ -2,6 +2,8 @@ package ping
 
 import (
 	"encoding/json"
+	"golang-server/cmd/product/makanplace/httplog"
+	"log"
 	"net/http"
 
 	"golang-server/cmd/product/makanplace/controller/middlewares"
@@ -43,6 +45,8 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 			ProductName: []string{"Fried Hokkien Mee"},
 		}
 		respB, _ := json.Marshal(resp)
+
+		log.Printf("%s response: %s\n", httplog.SPrintHttpRequestPrefix(r), string(respB))
 		w.Write(respB)
 	})))
 
