@@ -36,6 +36,7 @@ var DbConnPool *pgxpool.Pool
 func makanTokenCookieKey() string { return "makantoken" }
 
 func main() {
+	log.Println("Starting makanplace::main().")
 	if err := Init(); err != nil {
 		log.Fatal(err)
 	}
