@@ -33,6 +33,7 @@ func Register(mux *http.ServeMux, makanTokenCookieKey string, mkService *mk_user
 		if cookie != nil {
 			sessionId = cookie.Value
 		}
+		log.Printf("%s sessionId: %s\n", httplog.SPrintHttpRequestPrefix(r), sessionId)
 
 		resp := Response{LoginUrls: make(map[string]string)}
 
