@@ -160,46 +160,42 @@ func (r *Repo) UpdateOutletWithMenu(outletId *int64, outletName string, address 
 	return tx.Commit(context.Background())
 }
 
-func (r *Repo) NewOutletWithMenu(outletName string, address string, postal string, officialLinks []string, reviewLinks []string, menuItems []string) (err error) {
+func (r *Repo) NewOutletWithMenu(outletName string, address string, postal string, officialLinks []string, reviewLinks []string, menuItems []string) (id int64, err error) {
 	tx, err := r.conn.Begin(context.Background())
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	defer func() {
-		if err != nil {
-			tx.Rollback(context.Background())
-		}
-	}()
+	defer tx.Rollback(context.Background())
 
 	outletId, err := r.newOutlet(tx, outletName, address, postal, officialLinks)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	{
 		if len(menuItems) == 0 {
-			return fmt.Errorf("new outlet request %s: menu required", outletName)
+			return 0, fmt.Errorf("new outlet request %s: menu required", outletName)
 		}
 
 		itemIds, err := r.newMenuItems(tx, menuItems)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		_, err = r.NewStallMenuItem(tx, itemIds, outletId, false)
 		if err != nil {
-			return err
+			return 0, err
 		}
 	}
 
 	err = r.addReviewLinks(tx, outletId, reviewLinks)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	tx.Commit(context.Background())
-	return nil
+	return outletId, nil
 }
 
 type Outlet struct {

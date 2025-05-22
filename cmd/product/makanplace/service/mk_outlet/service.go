@@ -38,7 +38,7 @@ type Service struct {
 	repo *outlet.Repo
 }
 
-func (s *Service) AddOutlet(b AddOutletBody) error {
+func (s *Service) AddOutlet(b AddOutletBody) (int64, error) {
 	return s.repo.NewOutletWithMenu(b.OutletName, b.Address, b.PostalCode, b.OfficialLinks, b.ReviewLinks, b.MenuItems)
 }
 

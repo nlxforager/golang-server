@@ -26,7 +26,7 @@ type Link struct {
 	Value string `json:"value"`
 }
 type PostOutletBody struct {
-	OutletName    string   `json:"outlet_name"`
+	OutletName    string   `json:"name"`
 	OutletType    string   `json:"outlet_type"`
 	Address       string   `json:"address"`
 	PostalCode    string   `json:"postal_code"`
@@ -37,7 +37,7 @@ type PostOutletBody struct {
 
 type PutOutletBody struct {
 	Id            *int64   `json:"id"`
-	OutletName    string   `json:"outlet_name"`
+	OutletName    string   `json:"name"`
 	OutletType    string   `json:"outlet_type"`
 	ProductName   string   `json:"product_name"`
 	Address       string   `json:"address"`
@@ -72,7 +72,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 		for _, link := range b.ReviewLinks {
 			reviewLinks = append(reviewLinks, link.Value)
 		}
-		err = outletService.AddOutlet(mk_outlet_service.AddOutletBody{
+		outletId, err := outletService.AddOutlet(mk_outlet_service.AddOutletBody{
 			OutletName:    b.OutletName,
 			OutletType:    b.OutletType,
 			MenuItems:     b.MenuItems,
@@ -88,7 +88,11 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 			return
 		}
 
-		response_types.OkEmptyJsonBody(w)
+		response_types.OkJsonBody(w, struct {
+			Id int64 `json:"id"`
+		}{
+			Id: outletId,
+		})
 	})))
 
 	// Put outlet
