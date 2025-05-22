@@ -1,13 +1,25 @@
 package mk_outlet_service
 
 import (
+	"errors"
 	"log"
 
 	"golang-server/cmd/product/makanplace/client/onemap"
 	"golang-server/cmd/product/makanplace/repositories/outlet"
 )
 
-type ServiceBody struct {
+type AddOutletBody struct {
+	OutletName    string
+	OutletType    string
+	ProductName   string
+	Address       string
+	PostalCode    string
+	OfficialLinks []string
+	ReviewLinks   []string
+}
+
+type PutOutletBody struct {
+	Id            *int64
 	OutletName    string
 	OutletType    string
 	ProductName   string
@@ -25,24 +37,31 @@ type Service struct {
 	repo *outlet.Repo
 }
 
-func (s *Service) AddOutlet(b ServiceBody) error {
+func (s *Service) AddOutlet(b AddOutletBody) error {
 	return s.repo.NewOutletWithMenu(b.OutletName, b.Address, b.PostalCode, b.OfficialLinks, b.ReviewLinks, []string{b.ProductName})
+}
+
+func (s *Service) PutOutlet(b PutOutletBody) error {
+	if b.Id == nil {
+		return errors.New("id is required")
+	}
+	return s.repo.UpdateOutletWithMenu(b.Id, b.OutletName, b.Address, b.PostalCode, b.OfficialLinks, b.ReviewLinks, []string{b.ProductName})
 }
 
 type LatLong = onemap.LatLong
 type Outlet struct {
-	Name          string   `json:"name"`
-	Address       string   `json:"address"`
-	PostalCode    string   `json:"postalCode"`
-	OfficialLinks []string `json:"officialLinks"`
-	ReviewLinks   []string `json:"reviewLinks"`
+	Name          string
+	Address       string
+	PostalCode    string
+	OfficialLinks []string
+	ReviewLinks   []string
 
-	*LatLong `json:"latlong"`
-	Id       int64 `json:"id"`
+	*LatLong
+	Id int64
 }
 
-func (s *Service) GetOutlets() ([]Outlet, error) {
-	outletsDb, err := s.repo.GetOutlets()
+func (s *Service) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
+	outletsDb, err := s.repo.GetOutlets(postalCode, id)
 	if err != nil {
 		return []Outlet{}, err
 	}

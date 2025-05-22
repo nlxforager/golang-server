@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	mklog "golang-server/cmd/product/makanplace/httplog"
 
@@ -24,7 +25,18 @@ type Response struct {
 type Link struct {
 	Value string `json:"value"`
 }
-type Body struct {
+type PostOutletBody struct {
+	OutletName    string `json:"outlet_name"`
+	OutletType    string `json:"outlet_type"`
+	ProductName   string `json:"product_name"`
+	Address       string `json:"address"`
+	PostalCode    string `json:"postal_code"`
+	OfficialLinks []Link `json:"official_links"`
+	ReviewLinks   []Link `json:"review_links"`
+}
+
+type PutOutletBody struct {
+	Id            *int64 `json:"id"`
 	OutletName    string `json:"outlet_name"`
 	OutletType    string `json:"outlet_type"`
 	ProductName   string `json:"product_name"`
@@ -38,6 +50,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 	// middleware: isSuperUser
 	mwsWithSuper := mws.Wrap(middlewares.SuperUserMiddleware(mkService))
 
+	// create outlet
 	mux.Handle("POST /outlet/", mwsWithSuper.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		prefix := fmt.Sprintf("%s [POST /outlet]\n", mklog.SPrintHttpRequestPrefix(r))
 
@@ -46,7 +59,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 			panic(err)
 		}
 
-		var b Body
+		var b PostOutletBody
 		err = json.Unmarshal(body, &b)
 
 		var officialLinks []string
@@ -58,7 +71,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 		for _, link := range b.ReviewLinks {
 			reviewLinks = append(reviewLinks, link.Value)
 		}
-		err = outletService.AddOutlet(mk_outlet_service.ServiceBody{
+		err = outletService.AddOutlet(mk_outlet_service.AddOutletBody{
 			OutletName:    b.OutletName,
 			OutletType:    b.OutletType,
 			ProductName:   b.ProductName,
@@ -77,8 +90,49 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 		response_types.OkEmptyJsonBody(w)
 	})))
 
-	mux.Handle("GET /outlets/", mws.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("outlets getting")
+	// Put outlet
+	mux.Handle("PUT /outlet/", mwsWithSuper.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		prefix := fmt.Sprintf("%s [PUT /outlet]\n", mklog.SPrintHttpRequestPrefix(r))
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		var b PutOutletBody
+		err = json.Unmarshal(body, &b)
+
+		var officialLinks []string
+		for _, link := range b.OfficialLinks {
+			officialLinks = append(officialLinks, link.Value)
+		}
+
+		var reviewLinks []string
+		for _, link := range b.ReviewLinks {
+			reviewLinks = append(reviewLinks, link.Value)
+		}
+		err = outletService.PutOutlet(mk_outlet_service.PutOutletBody{
+			Id:            b.Id,
+			OutletName:    b.OutletName,
+			OutletType:    b.OutletType,
+			ProductName:   b.ProductName,
+			Address:       b.Address,
+			PostalCode:    b.PostalCode,
+			OfficialLinks: officialLinks,
+			ReviewLinks:   reviewLinks,
+		})
+
+		if err != nil {
+			log.Printf("%s Error editing outlet: %v\n", prefix, err)
+			response_types.ErrorNoBody(w, http.StatusBadRequest, err)
+			return
+		}
+
+		response_types.OkEmptyJsonBody(w)
+	})))
+
+	// get outlets
+	mux.Handle("GET /outlets", mws.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionId := middlewares.GetSessionIdFromRequest(r)
 		session := mkService.GetSession(sessionId, false)
 		if session == nil {
@@ -86,7 +140,27 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 			return
 		}
 
-		outletsS, err := outletService.GetOutlets()
+		prefix := mklog.SPrintHttpRequestPrefix(r)
+
+		postalCode := r.URL.Query().Get("postal_code")
+		_id := r.URL.Query().Get("id")
+
+		var postCodeParam *string
+		if postalCode != "" {
+			postCodeParam = &postalCode
+		}
+
+		var id *int
+		if _id != "" {
+			_idInt, err := strconv.Atoi(_id)
+			if err != nil {
+				response_types.ErrorNoBody(w, http.StatusBadRequest, err)
+			}
+			id = &_idInt
+		}
+
+		outletsS, err := outletService.GetOutlets(postCodeParam, id)
+
 		if err != nil {
 			log.Printf("Error getting outlets: %v\n", err)
 			response_types.ErrorNoBody(w, http.StatusInternalServerError, err)
@@ -102,10 +176,11 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 				OfficialLinks: o.OfficialLinks,
 				ReviewLinks:   o.ReviewLinks,
 				LatLong:       o.LatLong,
+				Id:            o.Id,
 			})
 		}
 
-		log.Printf("outlets got %d\n", len(out))
+		log.Printf("%s outlets got %d\n", prefix, len(out))
 		response_types.OkJsonBody(w, struct {
 			Outlets []Outlet `json:"outlets"`
 		}{out})
@@ -119,4 +194,5 @@ type Outlet struct {
 	OfficialLinks              []string `json:"official_links"`
 	*mk_outlet_service.LatLong `json:"latlong"`
 	ReviewLinks                []string `json:"review_links"`
+	Id                         int64    `json:"id"`
 }
