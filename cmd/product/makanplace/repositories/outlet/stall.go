@@ -49,7 +49,7 @@ func (r *Repo) newOutlet(tx pgx.Tx, name string, address string, postal string, 
 	return id, nil
 }
 
-func (r *Repo) NewMenuItem(txa pgx.Tx, names []string) (_ids []int64, err error) {
+func (r *Repo) NewMenuItems(txa pgx.Tx, names []string) (_ids []int64, err error) {
 	if txa == nil {
 		return []int64{}, fmt.Errorf("tx is nil")
 	}
@@ -59,6 +59,7 @@ func (r *Repo) NewMenuItem(txa pgx.Tx, names []string) (_ids []int64, err error)
 			txa.Rollback(context.Background())
 		}
 	}()
+
 	args := []interface{}{}
 	placeholders := []string{}
 
@@ -90,9 +91,16 @@ func (r *Repo) NewMenuItem(txa pgx.Tx, names []string) (_ids []int64, err error)
 	return ids, nil
 }
 
-func (r *Repo) NewStallMenuItem(txa pgx.Tx, menuItemIds []int64, outletId int64) (id int64, err error) {
+func (r *Repo) NewStallMenuItem(txa pgx.Tx, menuItemIds []int64, outletId int64, replace bool) (id int64, err error) {
 	if txa == nil {
 		return 0, fmt.Errorf("tx is nil")
+	}
+
+	if replace {
+		_, err = txa.Exec(context.Background(), "DELETE FROM outlet_menu where outlet_id = $1 ", outletId)
+		if err != nil {
+			return 0, fmt.Errorf("[NewStallMenuItem] %w", err)
+		}
 	}
 
 	args := []interface{}{}
@@ -104,8 +112,11 @@ func (r *Repo) NewStallMenuItem(txa pgx.Tx, menuItemIds []int64, outletId int64)
 	}
 
 	query := fmt.Sprintf("insert into outlet_menu(outlet_id, menu_item_id) values %s returning id;", strings.Join(placeholders, ", "))
-	row := txa.QueryRow(context.Background(), query, args...)
-	err = row.Scan(&id)
+	rows, err := txa.Query(context.Background(), query, args...)
+	defer rows.Close()
+	if err != nil {
+		return 0, fmt.Errorf("[NewStallMenuItem] %w", err)
+	}
 	if err != nil {
 		return 0, err
 	}
@@ -128,7 +139,21 @@ func (r *Repo) UpdateOutletWithMenu(outletId *int64, outletName string, address 
 	if err != nil {
 		return err
 	}
+	{
+		if len(menuItems) == 0 {
+			return fmt.Errorf("edit outlet request %s: menu required", outletName)
+		}
 
+		itemIds, err := r.NewMenuItems(tx, menuItems)
+		if err != nil {
+			return err
+		}
+
+		_, err = r.NewStallMenuItem(tx, itemIds, *outletId, true)
+		if err != nil {
+			return err
+		}
+	}
 	err = r.replaceReviewLinks(tx, outletId, reviewLinks)
 	if err != nil {
 		return err
@@ -158,12 +183,12 @@ func (r *Repo) NewOutletWithMenu(outletName string, address string, postal strin
 			return fmt.Errorf("new outlet request %s: menu required", outletName)
 		}
 
-		itemIds, err := r.NewMenuItem(tx, menuItems)
+		itemIds, err := r.NewMenuItems(tx, menuItems)
 		if err != nil {
 			return err
 		}
 
-		_, err = r.NewStallMenuItem(tx, itemIds, outletId)
+		_, err = r.NewStallMenuItem(tx, itemIds, outletId, false)
 		if err != nil {
 			return err
 		}
