@@ -23,7 +23,7 @@ type PutOutletBody struct {
 	Id            *int64
 	OutletName    string
 	OutletType    string
-	ProductName   string
+	ProductNames  []string
 	Address       string
 	PostalCode    string
 	OfficialLinks []string
@@ -46,7 +46,7 @@ func (s *Service) PutOutlet(b PutOutletBody) error {
 	if b.Id == nil {
 		return errors.New("id is required")
 	}
-	return s.repo.UpdateOutletWithMenu(b.Id, b.OutletName, b.Address, b.PostalCode, b.OfficialLinks, b.ReviewLinks, []string{b.ProductName})
+	return s.repo.UpdateOutletWithMenu(b.Id, b.OutletName, b.Address, b.PostalCode, b.OfficialLinks, b.ReviewLinks, b.ProductNames)
 }
 
 type LatLong = onemap.LatLong

@@ -36,14 +36,15 @@ type PostOutletBody struct {
 }
 
 type PutOutletBody struct {
-	Id            *int64 `json:"id"`
-	OutletName    string `json:"outlet_name"`
-	OutletType    string `json:"outlet_type"`
-	ProductName   string `json:"product_name"`
-	Address       string `json:"address"`
-	PostalCode    string `json:"postal_code"`
-	OfficialLinks []Link `json:"official_links"`
-	ReviewLinks   []Link `json:"review_links"`
+	Id            *int64   `json:"id"`
+	OutletName    string   `json:"outlet_name"`
+	OutletType    string   `json:"outlet_type"`
+	ProductName   string   `json:"product_name"`
+	Address       string   `json:"address"`
+	PostalCode    string   `json:"postal_code"`
+	OfficialLinks []Link   `json:"official_links"`
+	ReviewLinks   []Link   `json:"review_links"`
+	ProductNames  []string `json:"menu"`
 }
 
 func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middlewares.MiddewareStack, outletService *mk_outlet_service.Service) {
@@ -115,7 +116,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 			Id:            b.Id,
 			OutletName:    b.OutletName,
 			OutletType:    b.OutletType,
-			ProductName:   b.ProductName,
+			ProductNames:  b.ProductNames,
 			Address:       b.Address,
 			PostalCode:    b.PostalCode,
 			OfficialLinks: officialLinks,

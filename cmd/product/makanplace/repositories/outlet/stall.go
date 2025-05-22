@@ -49,21 +49,18 @@ func (r *Repo) newOutlet(tx pgx.Tx, name string, address string, postal string, 
 	return id, nil
 }
 
-func (r *Repo) NewMenuItems(txa pgx.Tx, names []string) (_ids []int64, err error) {
+func (r *Repo) newMenuItems(txa pgx.Tx, names []string) (_ids []int64, err error) {
 	if txa == nil {
 		return []int64{}, fmt.Errorf("tx is nil")
 	}
-
-	defer func() {
-		if err != nil {
-			txa.Rollback(context.Background())
-		}
-	}()
 
 	args := []interface{}{}
 	placeholders := []string{}
 
 	for i, name := range names {
+		if name == "" {
+			return []int64{}, fmt.Errorf("some menu item name is empty")
+		}
 		placeholders = append(placeholders, fmt.Sprintf("($%d)", i+1))
 		args = append(args, name)
 	}
@@ -144,7 +141,7 @@ func (r *Repo) UpdateOutletWithMenu(outletId *int64, outletName string, address 
 			return fmt.Errorf("edit outlet request %s: menu required", outletName)
 		}
 
-		itemIds, err := r.NewMenuItems(tx, menuItems)
+		itemIds, err := r.newMenuItems(tx, menuItems)
 		if err != nil {
 			return err
 		}
@@ -183,7 +180,7 @@ func (r *Repo) NewOutletWithMenu(outletName string, address string, postal strin
 			return fmt.Errorf("new outlet request %s: menu required", outletName)
 		}
 
-		itemIds, err := r.NewMenuItems(tx, menuItems)
+		itemIds, err := r.newMenuItems(tx, menuItems)
 		if err != nil {
 			return err
 		}

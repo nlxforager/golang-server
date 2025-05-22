@@ -13,7 +13,7 @@ import (
 )
 
 type OutletForm struct {
-	ProductName []string `json:"product_names"`
+	ProductNames []string `json:"product_names"`
 }
 type Response struct {
 	LoginUrls map[string]string `json:"login_urls"`
@@ -38,7 +38,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, goauthlogi
 		resp.UserInfo = session
 
 		resp.OutletForm = OutletForm{
-			ProductName: []string{"Fried Hokkien Mee"},
+			ProductNames: []string{"Fried Hokkien Mee", "Char Kway Teow"},
 		}
 		respB, _ := json.Marshal(resp)
 
