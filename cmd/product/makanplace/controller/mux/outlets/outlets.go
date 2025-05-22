@@ -26,13 +26,13 @@ type Link struct {
 	Value string `json:"value"`
 }
 type PostOutletBody struct {
-	OutletName    string `json:"outlet_name"`
-	OutletType    string `json:"outlet_type"`
-	ProductName   string `json:"product_name"`
-	Address       string `json:"address"`
-	PostalCode    string `json:"postal_code"`
-	OfficialLinks []Link `json:"official_links"`
-	ReviewLinks   []Link `json:"review_links"`
+	OutletName    string   `json:"outlet_name"`
+	OutletType    string   `json:"outlet_type"`
+	Address       string   `json:"address"`
+	PostalCode    string   `json:"postal_code"`
+	OfficialLinks []Link   `json:"official_links"`
+	ReviewLinks   []Link   `json:"review_links"`
+	MenuItems     []string `json:"menu"`
 }
 
 type PutOutletBody struct {
@@ -74,7 +74,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 		err = outletService.AddOutlet(mk_outlet_service.AddOutletBody{
 			OutletName:    b.OutletName,
 			OutletType:    b.OutletType,
-			ProductName:   b.ProductName,
+			MenuItems:     b.MenuItems,
 			Address:       b.Address,
 			PostalCode:    b.PostalCode,
 			OfficialLinks: officialLinks,
@@ -177,6 +177,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 				ReviewLinks:   o.ReviewLinks,
 				LatLong:       o.LatLong,
 				Id:            o.Id,
+				MenuItem:      o.MenuItems,
 			})
 		}
 
@@ -193,6 +194,7 @@ type Outlet struct {
 	PostalCode                 string   `json:"postal_code"`
 	OfficialLinks              []string `json:"official_links"`
 	*mk_outlet_service.LatLong `json:"latlong"`
-	ReviewLinks                []string `json:"review_links"`
-	Id                         int64    `json:"id"`
+	ReviewLinks                []string                     `json:"review_links"`
+	Id                         int64                        `json:"id"`
+	MenuItem                   []mk_outlet_service.MenuItem `json:"menu"`
 }

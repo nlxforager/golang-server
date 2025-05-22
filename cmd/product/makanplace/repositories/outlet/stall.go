@@ -2,6 +2,7 @@ package outlet
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -43,17 +44,14 @@ func (r *Repo) newOutlet(tx pgx.Tx, name string, address string, postal string, 
 	row := tx.QueryRow(context.Background(), "insert into outlet(name,address,postal_code, official_links) values ($1,$2,$3,$4) returning id;", name, address, postal, officialLinks)
 	err = row.Scan(&id)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("[newOutlet] %w", err)
 	}
 	return id, nil
 }
 
-func (r *Repo) NewMenuItem(txa pgx.Tx, name string) (id int64, err error) {
-	if name == "" {
-		return 0, fmt.Errorf("menu item name is empty")
-	}
+func (r *Repo) NewMenuItem(txa pgx.Tx, names []string) (_ids []int64, err error) {
 	if txa == nil {
-		return 0, fmt.Errorf("tx is nil")
+		return []int64{}, fmt.Errorf("tx is nil")
 	}
 
 	defer func() {
@@ -61,23 +59,52 @@ func (r *Repo) NewMenuItem(txa pgx.Tx, name string) (id int64, err error) {
 			txa.Rollback(context.Background())
 		}
 	}()
+	args := []interface{}{}
+	placeholders := []string{}
 
-	row := txa.QueryRow(context.Background(), "insert into menu_item(name) values ($1) returning id;", name)
-
-	err = row.Scan(&id)
-	if err != nil {
-		return 0, err
+	for i, name := range names {
+		placeholders = append(placeholders, fmt.Sprintf("($%d)", i+1))
+		args = append(args, name)
 	}
-	return id, nil
+
+	query := fmt.Sprintf("INSERT INTO menu_item(name) VALUES %s RETURNING id;", strings.Join(placeholders, ", "))
+
+	rows, err := txa.Query(context.Background(), query, args...)
+	if err != nil {
+		return []int64{}, fmt.Errorf("[NewMenuItem] %w", err)
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var _id int64
+		err = rows.Scan(&_id)
+		if err != nil {
+			return []int64{}, fmt.Errorf("[NewMenuItem] %w", err)
+		}
+		ids = append(ids, _id)
+	}
+	if err != nil {
+		return []int64{}, fmt.Errorf("[NewMenuItem] %w", err)
+	}
+	return ids, nil
 }
 
-func (r *Repo) NewStallMenuItem(txa pgx.Tx, menuItemId int64, outletId int64) (id int64, err error) {
+func (r *Repo) NewStallMenuItem(txa pgx.Tx, menuItemIds []int64, outletId int64) (id int64, err error) {
 	if txa == nil {
 		return 0, fmt.Errorf("tx is nil")
 	}
 
-	row := txa.QueryRow(context.Background(), "insert into outlet_menu(outlet_id, menu_item_id) values ($1,$2) returning id;", outletId, menuItemId)
+	args := []interface{}{}
+	placeholders := []string{}
 
+	for i, name := range menuItemIds {
+		placeholders = append(placeholders, fmt.Sprintf("($%d,$%d)", i+1, i+2))
+		args = append(args, outletId, name)
+	}
+
+	query := fmt.Sprintf("insert into outlet_menu(outlet_id, menu_item_id) values %s returning id;", strings.Join(placeholders, ", "))
+	row := txa.QueryRow(context.Background(), query, args...)
 	err = row.Scan(&id)
 	if err != nil {
 		return 0, err
@@ -127,19 +154,16 @@ func (r *Repo) NewOutletWithMenu(outletName string, address string, postal strin
 	}
 
 	{
-		if len(menuItems) > 1 {
-			return fmt.Errorf("outlet %s has more than one menu item. server not implemented", outletName)
-		}
 		if len(menuItems) == 0 {
-			return fmt.Errorf("outlet %s has no item server", outletName)
+			return fmt.Errorf("new outlet request %s: menu required", outletName)
 		}
 
-		itemId, err := r.NewMenuItem(tx, menuItems[0])
+		itemIds, err := r.NewMenuItem(tx, menuItems)
 		if err != nil {
 			return err
 		}
 
-		_, err = r.NewStallMenuItem(tx, itemId, outletId)
+		_, err = r.NewStallMenuItem(tx, itemIds, outletId)
 		if err != nil {
 			return err
 		}
@@ -162,15 +186,10 @@ type Outlet struct {
 	OfficialLinks []string
 	ReviewLinks   []string
 	Id            int64
+
+	MenuItems json.RawMessage `json:"menu_items"` // raw JSON
 }
 
-func posGen() func() string {
-	i := 0
-	return func() string {
-		i += 1
-		return fmt.Sprintf("$d", i)
-	}
-}
 func (r *Repo) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
 	var selectCriteria strings.Builder
 	if postalCode != nil {
@@ -181,18 +200,18 @@ func (r *Repo) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
 		selectCriteria.WriteString(fmt.Sprintf(" where outlet.id=%d", *id))
 	}
 
-	rows, err := r.conn.Query(context.Background(), "select outlet.id, name, address, postal_code, official_links, latlong, array_agg(owr.link) filter (where owr.link is not null) from outlet left join public.outlet_web_reviews owr on outlet.id = owr.outlet_id"+
+	rows, err := r.conn.Query(context.Background(), "select outlet.id, outlet.name, address, postal_code, official_links, latlong, COALESCE(array_agg(owr.link) filter (where owr.link is not null), '{}'), (json_agg(json_build_object('id', mi.id, 'name', mi.name)))  from outlet left join public.outlet_web_reviews owr on outlet.id = owr.outlet_id LEFT JOIN outlet_menu om on om.outlet_id = outlet.id LEFT JOIN menu_item mi on mi.id = om.menu_item_id"+
 		selectCriteria.String()+
 		" group by outlet.id;")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("GetOutlets: %w", err)
 	}
 	var outlets []Outlet
 	for rows.Next() {
 
 		var o Outlet
 
-		rows.Scan(&o.Id, &o.Name, &o.Address, &o.PostalCode, &o.OfficialLinks, &o.LatLong, &o.ReviewLinks)
+		rows.Scan(&o.Id, &o.Name, &o.Address, &o.PostalCode, &o.OfficialLinks, &o.LatLong, &o.ReviewLinks, &o.MenuItems)
 		outlets = append(outlets, o)
 	}
 	err = rows.Err()

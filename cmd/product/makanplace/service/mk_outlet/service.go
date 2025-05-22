@@ -1,6 +1,7 @@
 package mk_outlet_service
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 
@@ -11,7 +12,7 @@ import (
 type AddOutletBody struct {
 	OutletName    string
 	OutletType    string
-	ProductName   string
+	MenuItems     []string
 	Address       string
 	PostalCode    string
 	OfficialLinks []string
@@ -38,7 +39,7 @@ type Service struct {
 }
 
 func (s *Service) AddOutlet(b AddOutletBody) error {
-	return s.repo.NewOutletWithMenu(b.OutletName, b.Address, b.PostalCode, b.OfficialLinks, b.ReviewLinks, []string{b.ProductName})
+	return s.repo.NewOutletWithMenu(b.OutletName, b.Address, b.PostalCode, b.OfficialLinks, b.ReviewLinks, b.MenuItems)
 }
 
 func (s *Service) PutOutlet(b PutOutletBody) error {
@@ -49,6 +50,11 @@ func (s *Service) PutOutlet(b PutOutletBody) error {
 }
 
 type LatLong = onemap.LatLong
+type MenuItem struct {
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
 type Outlet struct {
 	Name          string
 	Address       string
@@ -57,7 +63,8 @@ type Outlet struct {
 	ReviewLinks   []string
 
 	*LatLong
-	Id int64
+	Id        int64
+	MenuItems []MenuItem `json:"menu_items"`
 }
 
 func (s *Service) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
@@ -88,15 +95,20 @@ func (s *Service) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
 			}
 		}
 
-		outlets = append(outlets, Outlet{
+		var mi []MenuItem
+		json.Unmarshal(outlet.MenuItems, &mi)
+		o := Outlet{
 			Name:          outlet.Name,
 			Address:       outlet.Address,
 			PostalCode:    outlet.PostalCode,
 			OfficialLinks: outlet.OfficialLinks,
-			LatLong:       latlong,
 			ReviewLinks:   outlet.ReviewLinks,
+			LatLong:       latlong,
 			Id:            outlet.Id,
-		})
+			MenuItems:     mi,
+		}
+
+		outlets = append(outlets, o)
 	}
 	return outlets, nil
 }
