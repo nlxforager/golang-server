@@ -3,6 +3,7 @@ module golang-server
 go 1.23.3
 
 require (
+	github.com/agnivade/levenshtein v1.2.1
 	github.com/aws/aws-sdk-go-v2 v1.33.0
 	github.com/aws/aws-sdk-go-v2/config v1.29.1
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.17.52

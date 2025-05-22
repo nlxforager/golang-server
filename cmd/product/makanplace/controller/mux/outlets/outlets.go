@@ -6,9 +6,8 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"slices"
 
-	log2 "golang-server/cmd/product/makanplace/httplog"
+	mklog "golang-server/cmd/product/makanplace/httplog"
 
 	"golang-server/cmd/product/makanplace/controller/middlewares"
 	"golang-server/cmd/product/makanplace/controller/response_types"
@@ -37,24 +36,10 @@ type Body struct {
 
 func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middlewares.MiddewareStack, outletService *mk_outlet_service.Service) {
 	// middleware: isSuperUser
-	mwsWithSuper := mws.Wrap(func(handler http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			sessionId := middlewares.GetSessionIdFromRequest(r)
-			session := mkService.GetSession(sessionId, false)
-			log.Printf("checking IsSuperUser: %#v\n", session)
-			// no gmails supplied or any of the gmails is not SU.
-			if len(session.Gmails) == 0 || slices.ContainsFunc(session.Gmails, func(gmail string) bool {
-				return !mkService.IsSuperUser(gmail)
-			}) {
-				response_types.ErrorNoBody(w, http.StatusUnauthorized, fmt.Errorf("not permitted to add outlet"))
-				return
-			}
-			handler.ServeHTTP(w, r)
-		})
-	})
+	mwsWithSuper := mws.Wrap(middlewares.SuperUserMiddleware(mkService))
 
 	mux.Handle("POST /outlet/", mwsWithSuper.Finalize(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		prefix := fmt.Sprintf("%s [POST /outlet]\n", log2.SPrintHttpRequestPrefix(r))
+		prefix := fmt.Sprintf("%s [POST /outlet]\n", mklog.SPrintHttpRequestPrefix(r))
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
