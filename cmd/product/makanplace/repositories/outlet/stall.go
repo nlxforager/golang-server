@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -104,11 +105,12 @@ func (r *Repo) NewStallMenuItem(txa pgx.Tx, menuItemIds []int64, outletId int64,
 	placeholders := []string{}
 
 	for i, name := range menuItemIds {
-		placeholders = append(placeholders, fmt.Sprintf("($%d,$%d)", i+1, i+2))
+		placeholders = append(placeholders, fmt.Sprintf("($%d,$%d)", i*2+1, i*2+2))
 		args = append(args, outletId, name)
 	}
 
 	query := fmt.Sprintf("insert into outlet_menu(outlet_id, menu_item_id) values %s returning id;", strings.Join(placeholders, ", "))
+	log.Printf("query %s", query)
 	rows, err := txa.Query(context.Background(), query, args...)
 	defer rows.Close()
 	if err != nil {
