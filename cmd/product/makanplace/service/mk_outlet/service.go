@@ -74,9 +74,9 @@ func (s *Service) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
 	}
 
 	var outlets []Outlet
-	for _, outlet := range outletsDb {
-		c := onemap.Client{}
+	c := onemap.NewClient()
 
+	for _, outlet := range outletsDb {
 		var latlong *LatLong
 		if len(outlet.LatLong) != 2 {
 			_latlong, lErr := c.GetLatLong(outlet.PostalCode)
