@@ -80,8 +80,8 @@ func (s *Service) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
 		var latlong *LatLong
 		if len(outlet.LatLong) != 2 {
 			_latlong, lErr := c.GetLatLong(outlet.PostalCode)
-			if lErr != nil {
-				log.Printf("Error getting latlong: %v\n", lErr)
+			if lErr != nil || _latlong == nil {
+				log.Printf("Error getting latlong or nil latlong: %v\n", lErr)
 			} else {
 				sErr := s.repo.SetLatLong(outlet.PostalCode, _latlong.Latitude, _latlong.Longitude)
 				if sErr != nil {
