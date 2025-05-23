@@ -2,14 +2,14 @@ package ping
 
 import (
 	"encoding/json"
-	"golang-server/cmd/product/makanplace/httplog"
+
 	"log"
 	"net/http"
 
 	"golang-server/cmd/product/makanplace/controller/middlewares"
-	"golang-server/cmd/product/makanplace/service/mk_user_session"
-
+	"golang-server/cmd/product/makanplace/httplog"
 	"golang-server/cmd/product/makanplace/repositories/auth"
+	"golang-server/cmd/product/makanplace/service/mk_user_session"
 )
 
 type OutletForm struct {
