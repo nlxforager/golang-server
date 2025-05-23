@@ -10,8 +10,11 @@ import (
 
 	mklog "golang-server/cmd/product/makanplace/httplog"
 
+	outletrepo "golang-server/cmd/product/makanplace/repositories/outlet"
+
 	"golang-server/cmd/product/makanplace/controller/middlewares"
 	"golang-server/cmd/product/makanplace/controller/response_types"
+
 	"golang-server/cmd/product/makanplace/service/mk_outlet"
 	"golang-server/cmd/product/makanplace/service/mk_user_session"
 )
@@ -23,8 +26,11 @@ type Response struct {
 }
 
 type Link struct {
-	Value string `json:"value"`
+	Link     string `json:"link"`
+	Platform string `json:"platform"`
+	Creator  string `json:"creator"`
 }
+
 type PostOutletBody struct {
 	OutletName    string   `json:"name"`
 	OutletType    string   `json:"outlet_type"`
@@ -65,12 +71,16 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 
 		var officialLinks []string
 		for _, link := range b.OfficialLinks {
-			officialLinks = append(officialLinks, link.Value)
+			officialLinks = append(officialLinks, link.Link)
 		}
 
-		var reviewLinks []string
+		var reviewLinks []outletrepo.ReviewLink
 		for _, link := range b.ReviewLinks {
-			reviewLinks = append(reviewLinks, link.Value)
+			reviewLinks = append(reviewLinks, outletrepo.ReviewLink{
+				Link:     link.Link,
+				Platform: link.Platform,
+				Creator:  link.Creator,
+			})
 		}
 		outletId, err := outletService.AddOutlet(mk_outlet_service.AddOutletBody{
 			OutletName:    b.OutletName,
@@ -109,12 +119,16 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 
 		var officialLinks []string
 		for _, link := range b.OfficialLinks {
-			officialLinks = append(officialLinks, link.Value)
+			officialLinks = append(officialLinks, link.Link)
 		}
 
-		var reviewLinks []string
+		var reviewLinks []outletrepo.ReviewLink
 		for _, link := range b.ReviewLinks {
-			reviewLinks = append(reviewLinks, link.Value)
+			reviewLinks = append(reviewLinks, outletrepo.ReviewLink{
+				Link:     link.Link,
+				Platform: link.Platform,
+				Creator:  link.Creator,
+			})
 		}
 		err = outletService.PutOutlet(mk_outlet_service.PutOutletBody{
 			Id:            b.Id,
@@ -179,7 +193,7 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 				Address:       o.Address,
 				PostalCode:    o.PostalCode,
 				OfficialLinks: o.OfficialLinks,
-				ReviewLinks:   o.ReviewLinks,
+				ReviewLinks:   toControllerType(o.ReviewLinks),
 				LatLong:       o.LatLong,
 				Id:            o.Id,
 				MenuItem:      o.MenuItems,
@@ -191,15 +205,4 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 			Outlets []Outlet `json:"outlets"`
 		}{out})
 	})))
-}
-
-type Outlet struct {
-	Name                       string   `json:"name"`
-	Address                    string   `json:"address"`
-	PostalCode                 string   `json:"postal_code"`
-	OfficialLinks              []string `json:"official_links"`
-	*mk_outlet_service.LatLong `json:"latlong"`
-	ReviewLinks                []string                     `json:"review_links"`
-	Id                         int64                        `json:"id"`
-	MenuItem                   []mk_outlet_service.MenuItem `json:"menu"`
 }

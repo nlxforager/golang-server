@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"golang-server/cmd/product/makanplace/client/onemap"
-	"golang-server/cmd/product/makanplace/repositories/outlet"
+	outletrepo "golang-server/cmd/product/makanplace/repositories/outlet"
 )
 
 type AddOutletBody struct {
@@ -16,7 +16,7 @@ type AddOutletBody struct {
 	Address       string
 	PostalCode    string
 	OfficialLinks []string
-	ReviewLinks   []string
+	ReviewLinks   []outletrepo.ReviewLink
 }
 
 type PutOutletBody struct {
@@ -27,7 +27,7 @@ type PutOutletBody struct {
 	Address       string
 	PostalCode    string
 	OfficialLinks []string
-	ReviewLinks   []string
+	ReviewLinks   []outletrepo.ReviewLink
 }
 
 type LatLongGetter interface {
@@ -35,7 +35,7 @@ type LatLongGetter interface {
 }
 
 type Service struct {
-	repo *outlet.Repo
+	repo *outletrepo.Repo
 }
 
 func (s *Service) AddOutlet(b AddOutletBody) (int64, error) {
@@ -60,7 +60,7 @@ type Outlet struct {
 	Address       string
 	PostalCode    string
 	OfficialLinks []string
-	ReviewLinks   []string
+	ReviewLinks   []outletrepo.ReviewLink
 
 	*LatLong
 	Id        int64
@@ -97,15 +97,20 @@ func (s *Service) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
 
 		var mi []MenuItem
 		json.Unmarshal(outlet.MenuItems, &mi)
+
+		var rl []outletrepo.ReviewLink
+
+		json.Unmarshal(outlet.ReviewLinks, &rl)
+
 		o := Outlet{
 			Name:          outlet.Name,
 			Address:       outlet.Address,
 			PostalCode:    outlet.PostalCode,
 			OfficialLinks: outlet.OfficialLinks,
-			ReviewLinks:   outlet.ReviewLinks,
 			LatLong:       latlong,
 			Id:            outlet.Id,
 			MenuItems:     mi,
+			ReviewLinks:   rl,
 		}
 
 		outlets = append(outlets, o)
@@ -113,6 +118,6 @@ func (s *Service) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
 	return outlets, nil
 }
 
-func NewOutletService(repo *outlet.Repo) *Service {
+func NewOutletService(repo *outletrepo.Repo) *Service {
 	return &Service{repo: repo}
 }

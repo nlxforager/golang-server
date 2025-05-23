@@ -122,7 +122,7 @@ func (r *Repo) NewStallMenuItem(txa pgx.Tx, menuItemIds []int64, outletId int64,
 	return id, nil
 }
 
-func (r *Repo) UpdateOutletWithMenu(outletId *int64, outletName string, address string, postal string, officialLinks []string, reviewLinks []string, menuItems []string) (err error) {
+func (r *Repo) UpdateOutletWithMenu(outletId *int64, outletName string, address string, postal string, officialLinks []string, reviewLinks []ReviewLink, menuItems []string) (err error) {
 	tx, err := r.conn.Begin(context.Background())
 	if err != nil {
 		return err
@@ -153,14 +153,14 @@ func (r *Repo) UpdateOutletWithMenu(outletId *int64, outletName string, address 
 			return err
 		}
 	}
-	err = r.replaceReviewLinks(tx, outletId, reviewLinks)
+	err = r.replaceReviewLinks(tx, outletId, reviewLinks, true)
 	if err != nil {
 		return err
 	}
 	return tx.Commit(context.Background())
 }
 
-func (r *Repo) NewOutletWithMenu(outletName string, address string, postal string, officialLinks []string, reviewLinks []string, menuItems []string) (id int64, err error) {
+func (r *Repo) NewOutletWithMenu(outletName string, address string, postal string, officialLinks []string, reviewLinks []ReviewLink, menuItems []string) (id int64, err error) {
 	tx, err := r.conn.Begin(context.Background())
 	if err != nil {
 		return 0, err
@@ -189,7 +189,7 @@ func (r *Repo) NewOutletWithMenu(outletName string, address string, postal strin
 		}
 	}
 
-	err = r.addReviewLinks(tx, outletId, reviewLinks)
+	err = r.replaceReviewLinks(tx, &outletId, reviewLinks, false)
 	if err != nil {
 		return 0, err
 	}
@@ -204,10 +204,10 @@ type Outlet struct {
 	Address       string
 	PostalCode    string
 	OfficialLinks []string
-	ReviewLinks   []string
 	Id            int64
 
-	MenuItems json.RawMessage `json:"menu_items"` // raw JSON
+	ReviewLinks json.RawMessage `json:"review_links"` // raw JSON
+	MenuItems   json.RawMessage `json:"menu_items"`   // raw JSON
 }
 
 func (r *Repo) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
@@ -220,7 +220,7 @@ func (r *Repo) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
 		selectCriteria.WriteString(fmt.Sprintf(" where outlet.id=%d", *id))
 	}
 
-	rows, err := r.conn.Query(context.Background(), "select outlet.id, outlet.name, address, postal_code, official_links, latlong, COALESCE(array_agg(owr.link) filter (where owr.link is not null), '{}'), (json_agg(json_build_object('id', mi.id, 'name', mi.name)))  from outlet left join public.outlet_web_reviews owr on outlet.id = owr.outlet_id LEFT JOIN outlet_menu om on om.outlet_id = outlet.id LEFT JOIN menu_item mi on mi.id = om.menu_item_id"+
+	rows, err := r.conn.Query(context.Background(), "select outlet.id, outlet.name, address, postal_code, official_links, latlong, COALESCE(json_agg(json_build_object('link',owr.link,'platform',owr.platform,'creator', owr.creator)) filter (where owr.link is not null), '{}'), (json_agg(json_build_object('id', mi.id, 'name', mi.name)))  from outlet left join public.outlet_web_reviews owr on outlet.id = owr.outlet_id LEFT JOIN outlet_menu om on om.outlet_id = outlet.id LEFT JOIN menu_item mi on mi.id = om.menu_item_id"+
 		selectCriteria.String()+
 		" group by outlet.id;")
 	if err != nil {
@@ -246,31 +246,30 @@ func (r *Repo) SetLatLong(postal string, latitude string, longitude string) erro
 	return err
 }
 
-func (r *Repo) addReviewLinks(tx pgx.Tx, outletId int64, links []string) error {
-	if tx == nil {
-		return fmt.Errorf("tx is nil")
-	}
-
-	_, err := tx.CopyFrom(context.Background(), pgx.Identifier{"outlet_web_reviews"}, []string{"outlet_id", "link"}, pgx.CopyFromSlice(len(links), func(i int) ([]any, error) {
-		return []any{outletId, links[i]}, nil
-	}))
-	return err
+type ReviewLink struct {
+	Link     string
+	Platform string
+	Creator  string
 }
 
-func (r *Repo) replaceReviewLinks(tx pgx.Tx, outletId *int64, links []string) error {
+func (r *Repo) replaceReviewLinks(tx pgx.Tx, outletId *int64, links []ReviewLink, replace bool) error {
 	if tx == nil {
 		return fmt.Errorf("tx is nil")
 	}
 	if outletId == nil {
 		return fmt.Errorf("outletId is nil")
 	}
-	_, err := tx.Exec(context.Background(), "DELETE FROM outlet_web_reviews where outlet_id=$1", *outletId)
-	if err != nil {
-		return err
+	if replace {
+		_, err := tx.Exec(context.Background(), "DELETE FROM outlet_web_reviews where outlet_id=$1", *outletId)
+		if err != nil {
+			return err
+		}
+
 	}
 
-	_, err = tx.CopyFrom(context.Background(), pgx.Identifier{"outlet_web_reviews"}, []string{"outlet_id", "link"}, pgx.CopyFromSlice(len(links), func(i int) ([]any, error) {
-		return []any{outletId, links[i]}, nil
+	_, err := tx.CopyFrom(context.Background(), pgx.Identifier{"outlet_web_reviews"}, []string{"outlet_id", "link", "platform", "creator"}, pgx.CopyFromSlice(len(links), func(i int) ([]any, error) {
+		link := links[i]
+		return []any{outletId, link.Link, link.Platform, link.Creator}, nil
 	}))
 	return err
 }
