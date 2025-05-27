@@ -155,8 +155,8 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, mws middle
 		sessionId := middlewares.GetSessionIdFromRequest(r)
 		session := mkService.GetSession(sessionId, false)
 		if session == nil {
-			w.WriteHeader(http.StatusOK)
-			return
+			//w.WriteHeader(http.StatusOK)
+			//return
 		}
 
 		prefix := mklog.SPrintHttpRequestPrefix(r)
