@@ -42,8 +42,8 @@ func Register(mux *http.ServeMux, mkService *mk_user_session.Service, goauthlogi
 
 		resp.OutletForm = OutletForm{
 			ProductNames: []string{"Fried Hokkien Mee", "Char Kway Teow"},
-			Creator:      []string{"Botak Jazz", "Others"},
-			Platform:     []string{"Facebook", "Others"},
+			Creator:      []string{"Botak Jazz", "Alderic", "Get Fed", "Others"},
+			Platform:     []string{"Youtube", "Facebook", "Others"},
 		}
 		respB, _ := json.Marshal(resp)
 

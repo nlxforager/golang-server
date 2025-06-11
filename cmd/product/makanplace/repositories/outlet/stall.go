@@ -228,7 +228,6 @@ func (r *Repo) GetOutlets(postalCode *string, id *int) ([]Outlet, error) {
 	}
 	var outlets []Outlet
 	for rows.Next() {
-
 		var o Outlet
 
 		rows.Scan(&o.Id, &o.Name, &o.Address, &o.PostalCode, &o.OfficialLinks, &o.LatLong, &o.ReviewLinks, &o.MenuItems)
